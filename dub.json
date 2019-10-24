@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Olivier Léobal"
+	],
+	"copyright": "Copyright © 2019, Olivier Léobal",
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "risper"
+}

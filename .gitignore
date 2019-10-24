@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/risper
+risper.so
+risper.dylib
+risper.dll
+risper.a
+risper.lib
+risper-test-*
+*.exe
+*.o
+*.obj
+*.lst
