@@ -12,7 +12,7 @@ Variant parseWordTo(T...)(string s)
 	assert(0);
 }
 
-alias parseWord = parseTo!(long,double,string);
+alias parseWord = parseWordTo!(long,double,string);
 
 
 Node[] parse(string s)
@@ -44,5 +44,5 @@ Node[] parse(string s)
 
 Node parseExpr(string s)
 {
-	
+	return Node();
 }

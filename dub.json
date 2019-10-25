@@ -3,6 +3,9 @@
 		"Olivier Léobal"
 	],
 	"copyright": "Copyright © 2019, Olivier Léobal",
+	"dependencies": {
+		"pegged": "~>0.4.4"
+	},
 	"description": "A minimal D application.",
 	"license": "proprietary",
 	"name": "risper"
