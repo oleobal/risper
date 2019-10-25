@@ -1,18 +1,19 @@
-import pegged.grammar;
+import risper;
 
 import std.stdio;
+import std.array:join;
 
-mixin(grammar(`
-Risper:
-	Parens	< "(" Primary* ")"
-	Primary	< Ident / Number / Parens
-	Number	< ~([0-9]+)
-	Ident	<- identifier
-`));
 
-void main()
+int main(string[] args)
 {
-	auto parseTree = Risper("(f 51 (1 2))");
-	writeln(parseTree);
+	if (args.length < 2)
+	{
+		writeln("Please pass expression as argument");
+		return 1;
+	}
+	auto tree = parse(args[1]);
 	
+	writeln(tree);
+	
+	return 0;
 }

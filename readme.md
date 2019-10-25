@@ -14,10 +14,26 @@ Characteristics:
  
  - identifiers are any set of alphanumeric characters starting with an
    alphabetic character
- - numerics
+ - case-insensitive
 
 (Alphabetic and Alphanumeric as defined by Phobos' std.uni, which obey the
 Unicode standard)
 
 
 To risp: to rub together, to rasp or grate (Wiktionary)
+
+### AST Node types
+
+**List** an ordered list, used to represent code as well as data
+
+**Ident** an identifier (variable or function name). Must start with an
+alphabetic character or `_`, and may only contain alphanumeric characters
+or `_`. Case-insensitive (lowercased on parsing)
+
+**Symbol** single-character identifier
+
+**NumberZ** a positive integer
+
+**NumberR** a positive real
+
+**String** a string delimited with `"`

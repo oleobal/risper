@@ -22,3 +22,4 @@ for a in sys.argv[1:]:
 	else:
 		print(" ".join(unicode_category[a]))
 		print()
+
