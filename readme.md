@@ -14,10 +14,9 @@ Characteristics:
  
  - identifiers are any set of alphanumeric characters starting with an
    alphabetic character
+ - symbols are single-character identifiers
  - case-insensitive
 
-(Alphabetic and Alphanumeric as defined by Phobos' std.uni, which obey the
-Unicode standard)
 
 
 To risp: to rub together, to rasp or grate (Wiktionary)
@@ -37,3 +36,6 @@ or `_`. Case-insensitive (lowercased on parsing)
 **NumberR** a positive real
 
 **String** a string delimited with `"`
+
+(Alphabetic and Alphanumeric as defined by Phobos' std.uni, which obey the
+Unicode standard. Symbol is isSymbol + isPunctuation)

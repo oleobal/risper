@@ -61,7 +61,7 @@ struct Node
 				result~=")";
 			else if (children.length == 1
 			      && children[0].type != NodeType.list
-				  && children[0].type != NodeType.call)
+			      && children[0].type != NodeType.call)
 				result~=", "~children[0].to!string~")";
 				
 			else
@@ -79,7 +79,9 @@ struct Node
 		{
 			if (children.length == 0)
 				result~=")";
-			else if (children.length ==1)
+			else if (children.length ==1
+			      && children[0].type != NodeType.list
+			      && children[0].type != NodeType.call)
 				result~=children[0].to!string~")";
 				
 			else

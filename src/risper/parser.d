@@ -54,7 +54,8 @@ Node parse(string s)
 	for(ulong i =0;i<children.length;i++)
 	{
 		if (children[i].type != NodeType.empty
-		 && children[i].type != NodeType.endOfFile)
+		 && children[i].type != NodeType.endOfFile
+		 && children[i].type != NodeType.comma)
 			filteredChildren~=children[i];
 	}
 	if (filteredChildren.length == 0)
@@ -119,9 +120,10 @@ Node parseExpr(ParseInfo p) { with (p)
 		result = Node(NodeType.number);
 	else if (s[i].isAlpha || s[i] == '_' )
 		result = Node(NodeType.ident);
-	else if (s[i].isSymbol)
+	else if (s[i].isSymbol || s[i].isPunctuation)
 		result = Node(NodeType.symbol);
-	
+	else
+		throw new ParsingException("invalid character: "~s[i].to!string);
 	
 	if (result.type == NodeType.string)
 	{
@@ -147,13 +149,13 @@ Node parseExpr(ParseInfo p) { with (p)
 			{
 				if (result.type == NodeType.numberR &&
 				result.value.get!string[$-1] == 'f')
-					throw new ParsingException("Invalid number literal: "~result.value.get!string~s[i].to!string);
+					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result.value~=s[i].to!string;
 			}
 			else if (s[i] == '.' || s[i] == 'f')
 			{
 				if (result.type == NodeType.numberR)
-					throw new ParsingException("Invalid number literal: "~result.value.get!string~s[i].to!string);
+					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result.type = NodeType.numberR;
 				
 				if (s[i] == '.')
@@ -187,12 +189,9 @@ Node parseExpr(ParseInfo p) { with (p)
 	}
 	if (result.type == NodeType.symbol)
 	{
-		if (s[i].isSymbol)
-		{
-			result.type = NodeType.ident;
-			result.value=s[i].to!string;
-			i++;
-		}
+		result.type = NodeType.ident;
+		result.value=s[i].to!string;
+		i++;
 	}
 	
 	if (result.type == NodeType.list)
