@@ -77,7 +77,7 @@ Node parseExpr(string s)
  +/
 Node parseExpr(ParseInfo p) { with (p)
 {
-	debug { import std.stdio; }
+	debug { import std.stdio:writeln; }
 	
 	Node result;
 	
@@ -207,15 +207,19 @@ Node parseExpr(ParseInfo p) { with (p)
 	// attempt to convert an ident to call
 	if (result.isA!Ident)
 	{
-		auto oldi = i;
+		immutable auto oldi = i;
 		
 		Node buf = new Empty();
 		do {
 			buf = parseExpr(p);
-			if (buf.isA!List)
+			if (!buf.isA!Ignorable)
 			{
 				result = new Call(result);
-				result.children = buf.children;
+				
+				if (buf.isA!List)
+					result.children~= buf.children;
+				else
+					result.children~= buf;
 			}
 			else if (!buf.isA!Empty)
 			{
@@ -223,7 +227,7 @@ Node parseExpr(ParseInfo p) { with (p)
 				break;
 			}
 		}
-		while (buf.isA!Empty);
+		while (buf.isA!Ignorable);
 	}
 	
 	

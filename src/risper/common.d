@@ -4,7 +4,7 @@ import std.uni;
 
 import std.traits:isSomeString;
 
-bool isA(T)(Object o)
+bool isA(T)(const Object o)
 {
 	return (cast(T) o) ?true:false;
 }
@@ -98,22 +98,22 @@ class Node
 		this.children = n.children;
 	}
 	
-	override string toString()
+	override string toString() const
 	{
 		return this.toString(0);
 	}
 	
 	
-	string toString(uint indent)
+	string toString(uint indent) const
 	{
 		import std.range:repeat;
 		auto spaces = function(uint indent) { return ' '.repeat(indent*2).to!string; };
 		
-		string result=typeid(this).to!string.capitalizeFirst~"(";
+		string result=typeid(this).to!string["common.".length..$].capitalizeFirst~"(";
 		
 		if (this.isA!Call)
 		{
-			result~=value.to!string~"";
+			result~=(cast(Variant) value).coerce!string;
 			if (children.length == 0)
 				result~=")";
 			else if (children.length == 1 && !(this.isA!HasChildren))
@@ -150,7 +150,7 @@ class Node
 		else if (this.isA!Ignorable)
 			result~=")";
 		else
-			result~=value.to!string~")";
+			result~= (cast(Variant) value).coerce!string~")";
 			
 		return result;
 	}
