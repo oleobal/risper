@@ -46,25 +46,20 @@ Node parse(string s)
 	
 	if (p.s.length > 0)
 		while (p.i < p.s.length)
-		{
 			children~=parseExpr(p);
-		}
 	
 	Node[] filteredChildren;
 	for(ulong i =0;i<children.length;i++)
-	{
-		if (children[i].type != NodeType.empty
-		 && children[i].type != NodeType.endOfFile
-		 && children[i].type != NodeType.comma)
+		if (!(children[i].isA!Ignorable))
 			filteredChildren~=children[i];
-	}
+	
 	if (filteredChildren.length == 0)
-		return Node(NodeType.empty);
+		return new Empty;
 	else if (filteredChildren.length == 1)
 		return filteredChildren[0];
 	else 
 	{
-		auto n = Node(NodeType.list);
+		auto n = new List;
 		n.children = filteredChildren;
 		return n;
 	}
@@ -82,50 +77,47 @@ Node parseExpr(string s)
  +/
 Node parseExpr(ParseInfo p) { with (p)
 {
+	debug { import std.stdio; }
+	
 	Node result;
 	
 	if (s.length == 0 || i >= s.length)
-		result = Node(NodeType.endOfFile);
+		result = new EndOfFile;
 	else if (s[i].isWhite)
 	{
-		result = Node(NodeType.empty);
+		result = new Empty;
 		i++;
 	}
 	else if (s[i] == ',')
 	{
-		result = Node(NodeType.comma);
-		i++;
-	}
-	else if (s[i].isWhite)
-	{
-		result = Node(NodeType.comma);
+		result = new Comma;
 		i++;
 	}
 	else if (s[i] == '(')
 	{
-		result = Node(NodeType.list);
+		result = new List;
 		i++;
 	}
 	else if (s[i] == ')')
 	{
-		result = Node(NodeType.endOfList);
+		result = new EndOfList;
 		i++;
 	}
 	else if (s[i] == '"')
 	{
-		result = Node(NodeType.string);
+		result = new String;
 		i++;
 	}
 	else if (s[i].isNumber || s[i] == '.')
-		result = Node(NodeType.number);
+		result = new Number;
 	else if (s[i].isAlpha || s[i] == '_' )
-		result = Node(NodeType.ident);
+		result = new Ident;
 	else if (s[i].isSymbol || s[i].isPunctuation)
-		result = Node(NodeType.symbol);
+		result = new Symbol;
 	else
 		throw new ParsingException("invalid character: "~s[i].to!string);
 	
-	if (result.type == NodeType.string)
+	if (result.isA!String)
 	{
 		result.value = "";
 		for (;i<s.length;i++)
@@ -140,23 +132,22 @@ Node parseExpr(ParseInfo p) { with (p)
 		}
 	}
 	
-	if (result.type == NodeType.number)
+	if (result.isA!Number)
 	{
 		result.value = "";
 		for (;i<s.length;i++)
 		{
 			if (s[i].isNumber)
 			{
-				if (result.type == NodeType.numberR &&
-				result.value.get!string[$-1] == 'f')
+				if (result.isA!NumberR && result.value.get!string[$-1] == 'f')
 					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result.value~=s[i].to!string;
 			}
 			else if (s[i] == '.' || s[i] == 'f')
 			{
-				if (result.type == NodeType.numberR)
+				if (result.isA!NumberR)
 					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
-				result.type = NodeType.numberR;
+				result = new NumberR(result);
 				
 				if (s[i] == '.')
 					result.value~=s[i].to!string;
@@ -164,17 +155,17 @@ Node parseExpr(ParseInfo p) { with (p)
 			else
 				break;
 		}
-		if (result.type == NodeType.numberR)
+		if (result.isA!NumberR)
 			result.value = result.value.get!string.to!double;
 		else
 		{
-			result.type = NodeType.numberZ;
+			result = new NumberZ(result);
 			result.value = result.value.get!string.to!long;
 		}
 		
 	}
 	
-	if (result.type == NodeType.ident)
+	if (result.isA!Ident)
 	{
 		result.value = "";
 		result.value~=s[i].to!string; i++;
@@ -187,14 +178,13 @@ Node parseExpr(ParseInfo p) { with (p)
 		}
 		result.value=result.value.get!string.toLower; //case insensitivity
 	}
-	if (result.type == NodeType.symbol)
+	if (result.isA!Symbol)
 	{
-		result.type = NodeType.ident;
 		result.value=s[i].to!string;
 		i++;
 	}
 	
-	if (result.type == NodeType.list)
+	if (result.isA!List)
 	{
 		while (i<s.length)
 		{
@@ -215,27 +205,26 @@ Node parseExpr(ParseInfo p) { with (p)
 	// -----------------------------
 	
 	// attempt to convert an ident to call
-	if (result.type == NodeType.ident)
+	if (result.isA!Ident)
 	{
 		auto oldi = i;
 		
-		auto buf = Node(NodeType.empty);
+		Node buf = new Empty();
 		do {
 			buf = parseExpr(p);
-			if (buf.type == NodeType.list)
+			if (buf.isA!List)
 			{
-				result.type = NodeType.call;
+				result = new Call(result);
 				result.children = buf.children;
 			}
-			else if (buf.type != NodeType.empty)
+			else if (!buf.isA!Empty)
 			{
 				i = oldi;
 				break;
 			}
 		}
-		while (buf.type == NodeType.empty);
+		while (buf.isA!Empty);
 	}
-	
 	
 	
 	
