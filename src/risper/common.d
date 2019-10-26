@@ -7,21 +7,26 @@ import std.traits:isSomeString;
 dchar[] reservedSymbols =
 [
 	'.',
-	':',
 	',',
 ];
 
 enum NodeType {
 	list,
+	endOfList, // used for context exploration, not in final tree
 	ident, // must start with alpha or _, may then contain alpha, num
-	call, // either a single symbol, or an ident starting with :
+	symbol, // preliminary, expanded to ident
+	
+	call, // ident will be expanded to this, if followed by list
 	
 	number, // preliminary classification, should be expanded to Z or R
 	numberZ,
 	numberR,
 	
 	string,
-	empty
+	
+	empty, // nothing (whitespace)
+	comma, // ',' (forceful separator)
+	endOfFile, 
 }
 
 
@@ -45,9 +50,32 @@ struct Node
 	string toString(uint indent)
 	{
 		import std.range:repeat;
+		auto spaces = function(uint indent) { return ' '.repeat(indent*2).to!string; };
+		
 		string result=type.to!string.capitalizeFirst~"(";
 		
-		if (type == NodeType.list)
+		if (type == NodeType.call)
+		{
+			result~=value.to!string~"";
+			if (children.length == 0)
+				result~=")";
+			else if (children.length == 1
+			      && children[0].type != NodeType.list
+				  && children[0].type != NodeType.call)
+				result~=", "~children[0].to!string~")";
+				
+			else
+			{
+				result~="\n";
+				
+				foreach(c;children[0..$-1])
+					result~=spaces(indent+1)~c.toString(indent+1)~",\n";
+				result~=spaces(indent+1)~children[$-1].toString(indent+1);
+				result~='\n'~spaces(indent)~")";
+			}
+		}
+		
+		else if (type == NodeType.list)
 		{
 			if (children.length == 0)
 				result~=")";
@@ -56,9 +84,7 @@ struct Node
 				
 			else
 			{
-				auto spaces = function(uint indent) { return ' '.repeat(indent*2).to!string; };
 				result~="\n";
-				
 				
 				foreach(c;children[0..$-1])
 					result~=spaces(indent+1)~c.toString(indent+1)~",\n";
@@ -66,7 +92,7 @@ struct Node
 				result~='\n'~spaces(indent)~")";
 			}
 		}
-		else if (type == NodeType.empty)
+		else if (type == NodeType.empty || type == NodeType.endOfFile || type == NodeType.endOfList)
 			result~=")";
 		else
 			result~=value.to!string~")";
