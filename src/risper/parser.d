@@ -138,19 +138,15 @@ Node parseExpr(ParseInfo p) { with (p)
 		for (;i<s.length;i++)
 		{
 			if (s[i].isNumber)
-			{
-				if (result.isA!NumberR && result.value.get!string[$-1] == 'f')
-					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result.value~=s[i].to!string;
-			}
-			else if (s[i] == '.' || s[i] == 'f')
+				
+			else if (s[i] == '.')
 			{
 				if (result.isA!NumberR)
 					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result = new NumberR(result);
 				
-				if (s[i] == '.')
-					result.value~=s[i].to!string;
+				result.value~=s[i].to!string;
 			}
 			else
 				break;
