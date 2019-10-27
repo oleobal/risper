@@ -39,24 +39,84 @@ mixin template CommonToNodes()
 {
 	this() {}
 	this(Node n) { super(n); }
+	
 }
+
+
 
 /// will be removed after initial rounds of parsing
 interface Preliminary {}
 
+class Primary: Node { mixin CommonToNodes; }
+
 /// must start with alpha or _, may then contain alpha, num, '_'
-class Ident: Node { mixin CommonToNodes; }
+class Ident: Primary { mixin CommonToNodes; }
 
 class Symbol: Ident, Preliminary { mixin CommonToNodes; }
 
+/// the . (membership) operator, has 2 children
+class Dot: Ident, HasChildren { mixin CommonToNodes; }
 
 
 interface HasChildren {}
-class List: Node, HasChildren { mixin CommonToNodes; }
+class List: Primary, HasChildren { mixin CommonToNodes; }
+
 
 /// ident will be expanded to this, if followed by list
-class Call: Node, HasChildren { mixin CommonToNodes; }
-
+class Call: Primary, HasChildren
+{
+	Ident func;
+	
+	this() {}
+	
+	/// assuming it is passed an ident..
+	this(Ident func)
+	{
+		this.func = func;
+	}
+	
+	/// args is assumed to be either a single node, or a List,
+	/// which will be depacked
+	this(Ident func, Node args)
+	{
+		if (args.isA!List)
+			children = args.children;
+		else
+			children ~= args;
+		this(func);
+	}
+	
+	override string toString(uint indent) const
+	{
+		import std.range:repeat;
+		
+		string result=typeid(this).to!string["common.".length..$].capitalizeFirst~"(";
+		
+		if (this.isA!Call)
+		{
+			if (this.func.isA!Dot)
+				result~="\n"~spaces(indent+1)~this.func.toString(indent+1)~",";
+			else
+				result~=(cast(Variant) this.func.value).to!string;
+			
+			if (children.length == 0)
+				result~=")";
+			else if (children.length == 1 && !(this.isA!HasChildren))
+				result~=", "~children[0].to!string~")";
+				
+			else
+			{
+				result~="\n";
+				
+				foreach(c;children[0..$-1])
+					result~=spaces(indent+1)~c.toString(indent+1)~",\n";
+				result~=spaces(indent+1)~children[$-1].toString(indent+1);
+				result~='\n'~spaces(indent)~")";
+			}
+		}
+		return result;
+	}
+}
 
 
 interface Ignorable {}
@@ -76,11 +136,12 @@ class EndOfFile : Node, Ignorable {}
 interface Literal {}
 
 /// expanded to Z (integer) or R (real)
-class Number : Node, Literal, Preliminary { mixin CommonToNodes; }
-class NumberZ : Number, Literal { mixin CommonToNodes; }
-class NumberR : Number, Literal { mixin CommonToNodes; }
+class Number  : Primary, Literal { mixin CommonToNodes; }
+class NumberP : Number, Preliminary { mixin CommonToNodes; }
+class NumberZ : Number { mixin CommonToNodes; }
+class NumberR : Number { mixin CommonToNodes; }
 
-class String : Node, Literal { mixin CommonToNodes; }
+class String  : Primary, Literal { mixin CommonToNodes; }
 
 
 
@@ -98,6 +159,13 @@ class Node
 		this.children = n.children;
 	}
 	
+	
+	string spaces(uint indent) const
+	{
+		import std.range:repeat;
+		return ' '.repeat(indent*2).to!string;
+	}
+	
 	override string toString() const
 	{
 		return this.toString(0);
@@ -106,31 +174,9 @@ class Node
 	
 	string toString(uint indent) const
 	{
-		import std.range:repeat;
-		auto spaces = function(uint indent) { return ' '.repeat(indent*2).to!string; };
-		
 		string result=typeid(this).to!string["common.".length..$].capitalizeFirst~"(";
 		
-		if (this.isA!Call)
-		{
-			result~=(cast(Variant) value).coerce!string;
-			if (children.length == 0)
-				result~=")";
-			else if (children.length == 1 && !(this.isA!HasChildren))
-				result~=", "~children[0].to!string~")";
-				
-			else
-			{
-				result~="\n";
-				
-				foreach(c;children[0..$-1])
-					result~=spaces(indent+1)~c.toString(indent+1)~",\n";
-				result~=spaces(indent+1)~children[$-1].toString(indent+1);
-				result~='\n'~spaces(indent)~")";
-			}
-		}
-		
-		else if (this.isA!List)
+		if (this.isA!HasChildren)
 		{
 			if (children.length == 0)
 				result~=")";
@@ -148,7 +194,7 @@ class Node
 			}
 		}
 		else if (this.isA!Ignorable)
-			result~=")";
+			result=result[0..$-1];
 		else
 			result~= (cast(Variant) value).coerce!string~")";
 			

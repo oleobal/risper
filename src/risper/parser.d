@@ -32,6 +32,16 @@ class ParseInfo
 		this.s=s;
 		i=0;
 	}
+	
+	
+	override string toString() const
+	{
+		dstring result = s~"\n";
+		for (ulong z=0; z<i; z++)
+			result~=" ";
+		result~="^"~i.to!dstring;
+		return result.to!string;
+	}
 }
 
 /++
@@ -109,7 +119,7 @@ Node parseExpr(ParseInfo p) { with (p)
 		i++;
 	}
 	else if (s[i].isNumber || s[i] == '.')
-		result = new Number;
+		result = new NumberP;
 	else if (s[i].isAlpha || s[i] == '_' )
 		result = new Ident;
 	else if (s[i].isSymbol || s[i].isPunctuation)
@@ -132,7 +142,7 @@ Node parseExpr(ParseInfo p) { with (p)
 		}
 	}
 	
-	if (result.isA!Number)
+	if (result.isA!NumberP)
 	{
 		result.value = "";
 		for (;i<s.length;i++)
@@ -173,12 +183,54 @@ Node parseExpr(ParseInfo p) { with (p)
 				break;
 		}
 		result.value=result.value.get!string.toLower; //case insensitivity
+		
+		
+		if (i<s.length && s[i] == '.')
+		{
+			immutable auto oldi = i;
+			
+			i++;
+			auto newResult = new Dot();
+			newResult.children~=result;
+			
+			//writeln(p.to!string);
+			// looking ahead
+			Node buf = new Empty();
+			do {
+				buf = parseExpr(p);
+				if (buf.isA!Ident)
+				{
+					newResult.children~=buf;
+					result = newResult;
+				}
+				else if (buf.isA!Call)
+				{
+					Call cbuf = cast(Call) buf;
+					newResult.children~=cbuf.func;
+					cbuf.func = newResult;
+					result = cbuf;
+				}
+				else if (!buf.isA!Empty)
+				{
+					if (buf.isA!Number)
+					{
+						i = oldi;
+						break;
+					}
+					else
+						throw new ParsingException("dot operator followed by "~buf.to!string);
+				}
+			}
+			while (buf.isA!Ignorable);
+		}
+		
 	}
 	if (result.isA!Symbol)
 	{
 		result.value=s[i].to!string;
 		i++;
 	}
+	
 	
 	if (result.isA!List)
 	{
@@ -205,18 +257,12 @@ Node parseExpr(ParseInfo p) { with (p)
 	{
 		immutable auto oldi = i;
 		
+		// looking ahead
 		Node buf = new Empty();
 		do {
 			buf = parseExpr(p);
-			if (!buf.isA!Ignorable)
-			{
-				result = new Call(result);
-				
-				if (buf.isA!List)
-					result.children~= buf.children;
-				else
-					result.children~= buf;
-			}
+			if (buf.isA!Primary)
+				result = new Call(cast(Ident) result, buf);
 			else if (!buf.isA!Empty)
 			{
 				i = oldi;
@@ -225,7 +271,6 @@ Node parseExpr(ParseInfo p) { with (p)
 		}
 		while (buf.isA!Ignorable);
 	}
-	
 	
 	
 	
