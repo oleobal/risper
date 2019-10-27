@@ -16,7 +16,7 @@ Characteristics:
    alphabetic character
  - symbols are single-character identifiers
  - case-insensitive
-
+ - automatic typing with optional type declaration
 
 
 To risp: to rub together, to rasp or grate (Wiktionary)

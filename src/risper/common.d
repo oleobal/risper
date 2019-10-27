@@ -16,25 +16,6 @@ dchar[] reservedSymbols =
 	',',
 ];
 
-enum NodeType {
-	list,
-	endOfList, 
-	ident, 
-	symbol, 
-	
-	call,
-	
-	number, // preliminary classification, should be expanded to Z or R
-	numberZ,
-	numberR,
-	
-	string,
-	
-	empty, // nothing (whitespace)
-	comma, // ',' (forceful separator)
-	endOfFile, 
-}
-
 mixin template CommonToNodes()
 {
 	this() {}
@@ -143,7 +124,10 @@ class NumberR : Number { mixin CommonToNodes; }
 
 class String  : Primary, Literal { mixin CommonToNodes; }
 
-
+/// bind an expression to an identifier
+class Store: Node { mixin CommonToNodes; }
+/// declare an identifier to be a given type (takes either type or expr)
+class Def: Node { mixin CommonToNodes; }
 
 class Node
 {
@@ -204,6 +188,14 @@ class Node
 
 
 class ParsingException:Exception
+{
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(msg, file, line);
+	}
+}
+
+class EvalException:Exception
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
