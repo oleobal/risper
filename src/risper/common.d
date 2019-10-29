@@ -19,6 +19,7 @@ dchar[] reservedSymbols =
 mixin template CommonToNodes()
 {
 	this() {}
+	this(Variant v) {this.value = v;}
 	this(Node n) { super(n); }
 	
 }
@@ -60,6 +61,8 @@ class Call: Primary, HasChildren
 	/// which will be depacked
 	this(Ident func, Node args)
 	{
+		// TODO change this to only work for parens()
+		// but not regular lists
 		if (args.isA!List)
 			children = args.children;
 		else
@@ -73,31 +76,42 @@ class Call: Primary, HasChildren
 		
 		string result=typeid(this).to!string["common.".length..$].capitalizeFirst~"(";
 		
-		if (this.isA!Call)
-		{
-			if (this.func.isA!Dot)
-				result~="\n"~spaces(indent+1)~this.func.toString(indent+1)~",";
-			else
-				result~=(cast(Variant) this.func.value).to!string;
+		if (this.func.isA!Dot)
+			result~="\n"~spaces(indent+1)~this.func.toString(indent+1)~",";
+		else
+			result~=(cast(Variant) this.func.value).to!string;
+		
+		if (children.length == 0)
+			result~=")";
+		else if (children.length == 1 && !(this.isA!HasChildren))
+			result~=", "~children[0].to!string~")";
 			
-			if (children.length == 0)
-				result~=")";
-			else if (children.length == 1 && !(this.isA!HasChildren))
-				result~=", "~children[0].to!string~")";
-				
-			else
-			{
-				result~="\n";
-				
-				foreach(c;children[0..$-1])
-					result~=spaces(indent+1)~c.toString(indent+1)~",\n";
-				result~=spaces(indent+1)~children[$-1].toString(indent+1);
-				result~='\n'~spaces(indent)~")";
-			}
+		else
+		{
+			result~="\n";
+			
+			foreach(c;children[0..$-1])
+				result~=spaces(indent+1)~c.toString(indent+1)~",\n";
+			result~=spaces(indent+1)~children[$-1].toString(indent+1);
+			result~='\n'~spaces(indent)~")";
 		}
 		return result;
 	}
 }
+
+/// a block of code that declares arguments
+/// children -> the code to execute
+class Function: Primary, HasChildren {
+	Ident[] args;
+	
+	this(Ident[] args, Node[] code)
+	{
+		this.args = args,
+		children = code;
+	}
+}
+
+
 
 
 interface Ignorable {}
@@ -124,10 +138,13 @@ class NumberR : Number { mixin CommonToNodes; }
 
 class String  : Primary, Literal { mixin CommonToNodes; }
 
+
 /// bind an expression to an identifier
 class Store: Node { mixin CommonToNodes; }
 /// declare an identifier to be a given type (takes either type or expr)
 class Def: Node { mixin CommonToNodes; }
+
+
 
 class Node
 {
