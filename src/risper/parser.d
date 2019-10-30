@@ -103,14 +103,24 @@ Node parseExpr(ParseInfo p) { with (p)
 		result = new Comma;
 		i++;
 	}
-	else if (s[i] == '(')
+	else if (s[i] == '[')
 	{
 		result = new List;
 		i++;
 	}
-	else if (s[i] == ')')
+	else if (s[i] == ']')
 	{
 		result = new EndOfList;
+		i++;
+	}
+	else if (s[i] == '(')
+	{
+		result = new Parens;
+		i++;
+	}
+	else if (s[i] == ')')
+	{
+		result = new EndOfParens;
 		i++;
 	}
 	else if (s[i] == '"')
@@ -158,6 +168,7 @@ Node parseExpr(ParseInfo p) { with (p)
 				
 				result.value~=s[i].to!string;
 			}
+			else if (s[i] == '_') {}
 			else
 				break;
 		}
@@ -236,7 +247,8 @@ Node parseExpr(ParseInfo p) { with (p)
 	{
 		while (i<s.length)
 		{
-			if (s[i] == ')')
+			if ((result.isA!Parens && s[i] == ')')
+			 || (result.isA!List   && s[i] == ']'))
 			{
 				i++;
 				break;
@@ -263,7 +275,7 @@ Node parseExpr(ParseInfo p) { with (p)
 			buf = parseExpr(p);
 			if (buf.isA!Primary)
 				result = new Call(cast(Ident) result, buf);
-			else if (!buf.isA!Empty)
+			else if (!buf.isA!Empty) // so end of file/list ..
 			{
 				i = oldi;
 				break;

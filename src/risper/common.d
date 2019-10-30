@@ -14,6 +14,10 @@ dchar[] reservedSymbols =
 [
 	'.',
 	',',
+	'(',
+	')',
+	'[',
+	']',
 ];
 
 mixin template CommonToNodes()
@@ -42,6 +46,7 @@ class Dot: Ident, HasChildren { mixin CommonToNodes; }
 
 interface HasChildren {}
 class List: Primary, HasChildren { mixin CommonToNodes; }
+class Parens: List { mixin CommonToNodes; }
 
 
 /// ident will be expanded to this, if followed by list
@@ -57,13 +62,10 @@ class Call: Primary, HasChildren
 		this.func = func;
 	}
 	
-	/// args is assumed to be either a single node, or a List,
-	/// which will be depacked
+	/// if args is a Parens, it will be unpacked
 	this(Ident func, Node args)
 	{
-		// TODO change this to only work for parens()
-		// but not regular lists
-		if (args.isA!List)
+		if (args.isA!Parens)
 			children = args.children;
 		else
 			children ~= args;
@@ -124,6 +126,7 @@ class Comma : Node, Ignorable {}
 
 /// used for context exploration, not in final tree
 class EndOfList : Node, Ignorable {}
+class EndOfParens : EndOfList {}
 
 class EndOfFile : Node, Ignorable {}
 

@@ -24,6 +24,22 @@ class Context
 		return contents[key] = val;
 	}
 	
+	/++
+	 + will go up to the outer context to change the key at the source
+	 +/
+	Node overwrite(Ident key, Node val)
+	{
+		if (key in contents)
+			return contents[key] = val;
+		else
+		{
+			if (outer)
+				return outer.overwrite(key, val);
+			else
+				throw new Exception("undefined in context: "~key.to!string);
+		}
+	}
+	
 	this() {}
 	
 	this(Context outer)
