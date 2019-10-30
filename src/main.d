@@ -15,5 +15,8 @@ int main(string[] args)
 	
 	writeln(tree);
 	
+	Context c = new Context;
+	eval(tree, c).writeln;
+	
 	return 0;
 }

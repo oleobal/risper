@@ -52,7 +52,6 @@ class Context
 
 Node function(Node, ref Context)[string] specialFunctions()
 {
-	
 	return [
 		/// returns a Function node
 		"function":
@@ -75,7 +74,24 @@ Node function(Node, ref Context)[string] specialFunctions()
 				badArgs:
 				throw new Exception("first parameter of function must be list of ident or ident");
 			
-		} 
+		},
+		"+":
+		function(Node n, ref Context c){
+			if (n.children.length == 0)
+				badArgs:
+				throw new Exception("first parameter of function must be list of ident or ident");
+			
+			Number result = new Number(); result.value = 0;
+			foreach(child;n.children)
+			{
+				Node buf = eval(child, c);
+				if (!buf.isA!Number)
+					goto badArgs;
+				result.value+=buf.value;
+			}
+			return result;
+			
+		},
 		
 	];
 }
@@ -114,22 +130,20 @@ Node eval(Node expr, ref Context context)
 				newContext[func.args[i]] = e.children[i];
 			return eval(func.children, newContext);
 		}
-		
 	}
 	
 	if (List e = cast(List) expr)
-	{
-		foreach(c;e.children)
-		{
-			Node result = eval(c, context);
-		}
-	}
+		return eval(e.children, context);
+	
 	return new Empty();
 }
 
 Node eval(Node[] expr, ref Context context)
 {
-	auto l = new List();
-	l.children = expr;
-	return eval(l, context);
+	foreach(c;expr)
+	{
+		Node result = eval(c, context);
+		// TODO stuff
+	}
+	return new Empty();
 }

@@ -182,7 +182,13 @@ Node parseExpr(ParseInfo p) { with (p)
 		
 	}
 	
-	if (result.isA!Ident)
+	if (result.isA!Symbol)
+	{
+		result.value=s[i].to!string;
+		i++;
+		
+	}
+	else if (result.isA!Ident)
 	{
 		result.value = "";
 		result.value~=s[i].to!string; i++;
@@ -236,11 +242,7 @@ Node parseExpr(ParseInfo p) { with (p)
 		}
 		
 	}
-	if (result.isA!Symbol)
-	{
-		result.value=s[i].to!string;
-		i++;
-	}
+	
 	
 	
 	if (result.isA!List)
