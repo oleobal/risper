@@ -29,8 +29,15 @@ TODO: write out a full specification when I pin down a nice design.
 Lists are delimited with `[]`. List elements are separated with whitespace, or
 with `,` (forced separation).
 
-An alternative type of list is `()`, used for priority, which "disappears" at
-runtime when the expression within results in a single element.
+Evaluating a list (ie, executing a block of code) evaluates all its elements but
+returns nothing (`Empty`). There are two ways to retrieve values: the first is
+to use the `return` function, and the other is to use the alternative type of
+list `()`, used for priority.
+
+Parens have two special rules: 
+ - if a Parens contains a single element, then it is replaced at runtime with
+   the evaluation of this element
+ - Parens, unlike regular lists, are evaluated within the parent context.
 
 Function calls are an identifier followed by a primary. To store function
 pointers without calling them, one can use the `,` operator for forced
@@ -43,10 +50,17 @@ list as argument (eg `f[[1 2]]`, that's just ugly).
 
 ### built-in functions
 
+These aren't necessarily actual functions (they break function rules), but they
+are called using the same syntax.
+
 `store(identifier expression)` binds the result of the expression to the
-identifier
+identifier **in the current context**
+
+`return(expression)` terminates the current block of code, and returns the
+value of the passed expression.
 
 `function([args] code)` returns a function, ie callable code
+
 
 #### might be, one day
 

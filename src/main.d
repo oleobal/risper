@@ -13,10 +13,14 @@ int main(string[] args)
 	}
 	auto tree = parse(args[1]);
 	
+	writeln("------ AST --------------------");
 	writeln(tree);
 	
 	Context c = new Context;
+	writeln("------ result -----------------");
 	eval(tree, c).writeln;
+	writeln("------ context ----------------");
+	c.writeln;
 	
 	return 0;
 }

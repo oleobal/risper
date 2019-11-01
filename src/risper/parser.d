@@ -46,7 +46,7 @@ class ParseInfo
 
 /++
  + able to deal with implicit top-level list (serie of statements)
- + so '(f 5 2) (g 3 4)' is parsed as ((f 5 2) (g 3 4))
+ + so 'f(5 2) g(3 4)' is parsed as (f(5 2) g(3 4))
  +/
 Node parse(string s)
 {
@@ -69,7 +69,7 @@ Node parse(string s)
 		return filteredChildren[0];
 	else 
 	{
-		auto n = new List;
+		auto n = new Parens;
 		n.children = filteredChildren;
 		return n;
 	}
@@ -184,8 +184,14 @@ Node parseExpr(ParseInfo p) { with (p)
 	
 	if (result.isA!Symbol)
 	{
-		result.value=s[i].to!string;
-		i++;
+		result.value = "";
+		for (;i<s.length;i++)
+		{
+			if ((s[i].isSymbol || s[i].isPunctuation) && !reservedSymbols.canFind(s[i]))
+				result.value~=s[i].to!string;
+			else
+				break;
+		}
 		
 	}
 	else if (result.isA!Ident)

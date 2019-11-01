@@ -12,12 +12,10 @@ bool isA(T)(const Object o)
 
 dchar[] reservedSymbols =
 [
-	'.',
-	',',
-	'(',
-	')',
-	'[',
-	']',
+	'.',',',':',
+	'(',')',
+	'[',']',
+	'{','}',
 ];
 
 mixin template CommonToNodes()
@@ -48,6 +46,8 @@ interface HasChildren {}
 class List: Primary, HasChildren { mixin CommonToNodes; }
 class Parens: List { mixin CommonToNodes; }
 
+/// used for passing around results 
+class Return: Node, HasChildren { mixin CommonToNodes; }
 
 /// ident will be expanded to this, if followed by list
 class Call: Primary, HasChildren
@@ -148,7 +148,6 @@ class Store: Node { mixin CommonToNodes; }
 class Def: Node { mixin CommonToNodes; }
 
 
-
 class Node
 {
 	Node[] children;
@@ -161,13 +160,6 @@ class Node
 	{
 		this.value = n.value;
 		this.children = n.children;
-	}
-	
-	
-	string spaces(uint indent) const
-	{
-		import std.range:repeat;
-		return ' '.repeat(indent*2).to!string;
 	}
 	
 	override string toString() const
@@ -231,4 +223,10 @@ pure T capitalizeFirst(T)(T s) if (isSomeString!T)
 	if (s.length == 1)
 		return a[0].toUpper.to!T;
 	return a[0].toUpper.to!T ~ a[1..$].to!T;
+}
+
+string spaces(uint indent)
+{
+	import std.range:repeat;
+	return ' '.repeat(indent*2).to!string;
 }
