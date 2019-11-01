@@ -39,6 +39,11 @@ Parens have two special rules:
    the evaluation of this element
  - Parens, unlike regular lists, are evaluated within the parent context.
 
+For instance, `if(true (store(a, 5)) )` results in `a=5` in the outer context,
+but `if( true [store(a, 5)] )` doesn't touch it.
+
+
+
 Function calls are an identifier followed by a primary. To store function
 pointers without calling them, one can use the `,` operator for forced
 separation.
@@ -61,6 +66,8 @@ value of the passed expression.
 
 `function([args] code)` returns a function, ie callable code
 
+`if(expr(bool) expr [expr else])` returns the result of the expression evaluated
+as a result of the evaluation
 
 #### might be, one day
 

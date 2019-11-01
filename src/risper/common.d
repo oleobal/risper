@@ -12,6 +12,7 @@ bool isA(T)(const Object o)
 
 dchar[] reservedSymbols =
 [
+	'#',
 	'.',',',':',
 	'(',')',
 	'[',']',
@@ -130,6 +131,9 @@ class EndOfParens : EndOfList {}
 
 class EndOfFile : Node, Ignorable {}
 
+interface Comment {}
+
+class HashComment : Node, Preliminary, Comment, Ignorable {}
 
 interface Literal {}
 
@@ -141,6 +145,7 @@ class NumberR : Number { mixin CommonToNodes; }
 
 class String  : Primary, Literal { mixin CommonToNodes; }
 
+class Bool : Primary, Literal { mixin CommonToNodes; }
 
 /// bind an expression to an identifier
 class Store: Node { mixin CommonToNodes; }

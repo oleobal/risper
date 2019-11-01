@@ -1,0 +1,20 @@
+#!/usr/bin/env risper
+
+
+store(fibonacci,
+	function(
+		(number)
+		(
+			if(==(number, 0)
+				return 1)
+			if(==(number, 1)
+				return 1)
+			
+			return +(
+				fibonacci(-(number, 1)) fibonacci(-(number, 2))
+			)
+		)
+	)
+)
+
+writeln( "Fibonacci " 10 " = " fibonacci(10))

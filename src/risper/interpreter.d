@@ -120,6 +120,45 @@ Node function(Node, ref Context)[string] specialFunctions()
 				badArgs:	
 				throw new Exception("parameters should be ident and expression");
 		},
+		
+		"if":
+		function(Node n, ref Context c){
+			if (n.children.length < 2 || n.children.length > 3)
+				badArgs:
+				throw new Exception("parameters should be bool, code if, code else");
+			
+			auto condition = eval(n.children[0],c);
+			
+			Node result = new Empty;
+			if (condition.value == true)
+				result = eval(n.children[1],c);
+			else
+				if (n.children.length > 2)
+					result = eval(n.children[2],c);
+			
+			return result;
+		},
+		
+		// many questionable built-ins here but I'll get around to
+		// formalizing all of that later
+		
+		"writeln":
+		function(Node n, ref Context c){
+			string result = "";
+			
+			foreach(child;n.children)
+			{
+				Node buf = eval(child, c);
+				if (buf.isA!HasChildren)
+					result~=buf.to!string;
+				else
+					result~=buf.value.to!string;
+			}
+			import std.stdio:writeln; writeln(result);
+			
+			return new Empty;
+		},
+		
 		"+":
 		function(Node n, ref Context c){
 			if (n.children.length == 0)
@@ -133,6 +172,41 @@ Node function(Node, ref Context)[string] specialFunctions()
 				if (!buf.isA!Number)
 					goto badArgs;
 				result.value+=buf.value;
+			}
+			return result;
+			
+		},
+		
+		"-":
+		function(Node n, ref Context c){
+			if (n.children.length != 2)
+				badArgs:
+				throw new Exception("parameters should be two Number");
+			
+			Number result ;
+			if(n.children[0].isA!NumberR || n.children[1].isA!NumberR)
+				result = new NumberR(Variant(0.0));
+			else
+				result = new NumberZ(Variant(0));
+			
+			result.value = eval(n.children[0], c).value - eval(n.children[1], c).value;
+			return result;
+		},
+		
+		"==":
+		function(Node n, ref Context c){
+			if (n.children.length < 2)
+				badArgs:
+				throw new Exception("parameters should be at least two Numbers "~n.children.to!string);
+			
+			Bool result = new Bool(Variant(true));
+			with (n) for(uint i = 1; i < children.length ; i++)
+			{
+				if(eval(children[i-1],c).value != eval(children[i],c).value)
+				{
+					result.value = false;
+					break;
+				}
 			}
 			return result;
 			
@@ -156,7 +230,7 @@ Node eval(Node expr, ref Context context)
 		return expr;
 	
 	if (expr.isA!Ident)
-		return context[cast(Ident) expr];
+		return context[expr.value.coerce!string];
 	
 	if (Call e = cast(Call) expr )
 	{
@@ -178,7 +252,6 @@ Node eval(Node expr, ref Context context)
 		
 		else if (e.func.value.get!string in specialFunctions)
 		{
-			
 			return specialFunctions[e.func.value.get!string](e, context);
 		}
 		
@@ -188,7 +261,7 @@ Node eval(Node expr, ref Context context)
 			if (auto func = cast(Function) context[e.func])
 			{
 				for(ulong i=0; i<e.children.length && i<func.args.length; i++)
-					newContext[func.args[i]] = e.children[i];
+					newContext[func.args[i]] = eval(e.children[i], context);
 				return eval(func.children, newContext);
 			}
 			else

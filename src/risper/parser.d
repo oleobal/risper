@@ -91,11 +91,19 @@ Node parseExpr(ParseInfo p) { with (p)
 	
 	Node result;
 	
+	// first character
+	// -----------------------------
+	
 	if (s.length == 0 || i >= s.length)
 		result = new EndOfFile;
 	else if (s[i].isWhite)
 	{
 		result = new Empty;
+		i++;
+	}
+	else if (s[i] == '#')
+	{
+		result = new HashComment;
 		i++;
 	}
 	else if (s[i] == ',')
@@ -136,6 +144,22 @@ Node parseExpr(ParseInfo p) { with (p)
 		result = new Symbol;
 	else
 		throw new ParsingException("invalid character: "~s[i].to!string);
+	
+	// first pass
+	// -----------------------------
+	
+	if (result.isA!HashComment)
+	{
+		for (;i<s.length;i++)
+		{
+			if (s[i] == '\n')
+			{
+				i++;
+				break;
+			}
+		}
+		result = new HashComment;
+	}
 	
 	if (result.isA!String)
 	{
@@ -264,13 +288,26 @@ Node parseExpr(ParseInfo p) { with (p)
 			else if (s[i].isWhite || s[i] == ',')
 				i++;
 			else
-				result.children~=parseExpr(p);
+			{
+				auto buf = parseExpr(p);
+				if (!buf.isA!Comment)
+					result.children~=buf;
+			}
 		}
 	}
 	
 	
 	// Second pass
 	// -----------------------------
+	
+	// attempt to convert an ident to a reserved keyword
+	if (result.isA!Ident)
+	{
+		if (result.value == "true")
+			result = new Bool(Variant(true));
+		else if (result.value == "false")
+			result = new Bool(Variant(false));
+	}
 	
 	// attempt to convert an ident to call
 	if (result.isA!Ident)
