@@ -16,6 +16,19 @@ Variant parseWordTo(T...)(string s)
 	assert(0);
 }
 
+/++
+ + checks whether input is part of the reserved symbols
+ +/
+bool isValidSymbol(dchar c)
+{
+	if (!c.isSymbol && !c.isPunctuation)
+		return false;
+	if (reservedSymbols.canFind(c))
+		return false;
+	return true;
+}
+
+
 alias parseWord = parseWordTo!(long,double,string);
 
 class ParseInfo
@@ -140,7 +153,7 @@ Node parseExpr(ParseInfo p) { with (p)
 		result = new NumberP;
 	else if (s[i].isAlpha || s[i] == '_' )
 		result = new Ident;
-	else if (s[i].isSymbol || s[i].isPunctuation)
+	else if (s[i].isValidSymbol)
 		result = new Symbol;
 	else
 		throw new ParsingException("invalid character: "~s[i].to!string);
@@ -232,15 +245,16 @@ Node parseExpr(ParseInfo p) { with (p)
 		result.value=result.value.get!string.toLower; //case insensitivity
 		
 		
-		if (i<s.length && s[i] == '.')
+		if (i<s.length && (s[i] == '.' || s[i].isValidSymbol))
 		{
 			immutable auto oldi = i;
 			
-			i++;
+			if (s[i] == '.')
+				i++;
+			
 			auto newResult = new Dot();
 			newResult.children~=result;
 			
-			//writeln(p.to!string);
 			// looking ahead
 			Node buf = new Empty();
 			do {
@@ -308,6 +322,8 @@ Node parseExpr(ParseInfo p) { with (p)
 		else if (result.value == "false")
 			result = new Bool(Variant(false));
 	}
+	
+	
 	
 	// attempt to convert an ident to call
 	if (result.isA!Ident)
