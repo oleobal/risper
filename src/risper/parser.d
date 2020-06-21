@@ -124,6 +124,11 @@ Node parseExpr(ParseInfo p) { with (p)
 		result = new Comma;
 		i++;
 	}
+	else if (s[i] == ':')
+	{
+		result = new Colon;
+		i++;
+	}
 	else if (s[i] == '[')
 	{
 		result = new List;
@@ -291,21 +296,77 @@ Node parseExpr(ParseInfo p) { with (p)
 	
 	if (result.isA!List)
 	{
+		auto rAsList = cast(List) result;
 		while (i<s.length)
 		{
-			if ((result.isA!Parens && s[i] == ')')
-			 || (result.isA!List   && s[i] == ']'))
+			if ((rAsList.delimiter == ListDelimiter.Parentheses    && s[i] == ')')
+			 || (rAsList.delimiter == ListDelimiter.SquareBrackets && s[i] == ']'))
 			{
 				i++;
 				break;
 			}
 			else if (s[i].isWhite || s[i] == ',')
 				i++;
+			else if (s[i] == ':')
+			{
+				i++;
+				
+				result = new Dict(result);
+				if (result.children.length > 1)
+					throw new ParsingException("Invalid mixing of List and Dict syntax");
+				if (result.children.length>0)
+					(cast(Dict) result).members[result.children[0]] = null;
+				result.children=[];
+				break;
+			}
 			else
 			{
 				auto buf = parseExpr(p);
 				if (!buf.isA!Comment)
 					result.children~=buf;
+			}
+		}
+		
+		// was found to be a dict, let's try this again
+		if (result.isA!Dict)
+		{
+			auto d = cast(Dict) result;
+			
+			bool beforeColon = false;
+			
+			Node currentKey = null;
+			if (d.members.length > 0)
+				currentKey = d.members.byKey.front;
+			
+			while (i<s.length)
+			{
+				if ((rAsList.delimiter == ListDelimiter.Parentheses    && s[i] == ')')
+				 || (rAsList.delimiter == ListDelimiter.SquareBrackets && s[i] == ']'))
+				{
+					i++;
+					break;
+				}
+				else if (s[i].isWhite || s[i] == ',')
+				{
+					beforeColon=true;
+					i++;
+				}
+				else if (s[i] == ':')
+				{
+					beforeColon=false;
+					i++;
+				}
+				else
+				{
+					auto buf = parseExpr(p);
+					if (!buf.isA!Comment)
+					{
+						if (beforeColon)
+							currentKey = buf;
+						else
+							d.members[currentKey] = buf;
+					}
+				}
 			}
 		}
 	}

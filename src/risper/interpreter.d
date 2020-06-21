@@ -216,6 +216,8 @@ Node function(Node, ref Context)[string] specialFunctions()
 
 
 
+
+
 /++
  + Params:
  +     expr = the expression to evaluate
@@ -230,13 +232,21 @@ Node eval(Node expr, ref Context context)
 		return expr;
 	
 	if (expr.isA!Ident)
-		return context[expr.value.coerce!string];
+	{
+		if (expr.isA!Dot)
+			// getMember(expr.children[0], expr.children[1])
+			throw new EvalException("Dicts not implemented");
+		else
+			return context[expr.value.coerce!string];
+	}
 	
 	if (Call e = cast(Call) expr )
 	{
 		if (e.func.isA!Dot)
 		{
-			// TODO
+			// as it's a Call it may be either an UFCS call or
+			// an object member (which happens to be a function)
+			
 			throw new EvalException("Dot calling is not implemented yet");
 		}
 		

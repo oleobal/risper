@@ -19,12 +19,19 @@ dchar[] reservedSymbols =
 	'{','}',
 ];
 
+enum ListDelimiter
+{
+	Parentheses,
+	SquareBrackets,
+	Accolades, // ie curly brackets
+}
+
+
 mixin template CommonToNodes()
 {
 	this() {}
 	this(Variant v) {this.value = v;}
 	this(Node n) { super(n); }
-	
 }
 
 
@@ -44,8 +51,50 @@ class Dot: Ident, HasChildren { mixin CommonToNodes; }
 
 
 interface HasChildren {}
-class List: Primary, HasChildren { mixin CommonToNodes; }
-class Parens: List { mixin CommonToNodes; }
+interface IsDelimited {
+	ListDelimiter delimiter();
+	ListDelimiter setDelimiter(ListDelimiter d);
+}
+mixin template DelimiterUtil(alias d)
+{
+	ListDelimiter internalDelimiter = d; 
+	
+	ListDelimiter delimiter()
+	{
+		return internalDelimiter;
+	}
+	
+	ListDelimiter setDelimiter(ListDelimiter d)
+	{
+		return internalDelimiter = d;
+	}
+}
+/// stupid, yeah
+mixin template DelimiterUtilOverride(alias d)
+{
+	ListDelimiter internalDelimiter = d; 
+	
+	override ListDelimiter delimiter()
+	{
+		return internalDelimiter;
+	}
+	
+	override ListDelimiter setDelimiter(ListDelimiter d)
+	{
+		return internalDelimiter = d;
+	}
+}
+
+
+
+class List: Primary, HasChildren, IsDelimited {
+	mixin CommonToNodes;
+	mixin DelimiterUtil!(ListDelimiter.SquareBrackets);
+}
+class Parens: List {
+	mixin CommonToNodes;
+	mixin DelimiterUtilOverride!(ListDelimiter.Parentheses);
+}
 
 /// used for passing around results 
 class Return: Node, HasChildren { mixin CommonToNodes; }
@@ -125,6 +174,9 @@ class Empty : Node, Ignorable {}
 /// ',' (forceful separator)
 class Comma : Node, Ignorable {}
 
+/// ':'
+class Colon : Node {}
+
 /// used for context exploration, not in final tree
 class EndOfList : Node, Ignorable {}
 class EndOfParens : EndOfList {}
@@ -146,6 +198,31 @@ class NumberR : Number { mixin CommonToNodes; }
 class String  : Primary, Literal { mixin CommonToNodes; }
 
 class Bool : Primary, Literal { mixin CommonToNodes; }
+
+class Dict : Primary, IsDelimited {
+	mixin CommonToNodes;
+	mixin DelimiterUtil!(ListDelimiter.Parentheses); // will be overridden
+	
+	Node[Node] members;
+	
+	
+	auto hasMember(Node key)
+	{
+		return cast(bool) (key in members);
+	}
+	
+	Node getMember(Node key)
+	{
+		return members[key];
+	}
+	
+	Node setMember(Node key, Node value)
+	{
+		return members[key] = value;
+	}
+	
+}
+
 
 /// bind an expression to an identifier
 class Store: Node { mixin CommonToNodes; }
@@ -177,7 +254,30 @@ class Node
 	{
 		string result=typeid(this).to!string["common.".length..$].capitalizeFirst~"(";
 		
-		if (this.isA!HasChildren)
+		if (this.isA!Dict)
+		{
+			auto members = (cast(Dict) this).members;
+			if (members.length == 0)
+				result~=")";
+			else if (members.length == 1 && !(this.isA!HasChildren))
+				result~=members.byKey.front.toString(indent+1)~": "~members[members.byKey.front].to!string~")";
+				
+			else
+			{
+				result~="\n";
+				typeof(members.length) index=0;
+				foreach(k;members.byKey)
+				{
+					result~=spaces(indent+1)~k.toString(indent+1)~": "~members[k].toString;
+					index++;
+					if (index < members.length)
+						result~=",\n";
+					
+				}
+				result~='\n'~spaces(indent)~")";
+			}
+		}
+		else if (this.isA!HasChildren)
 		{
 			if (children.length == 0)
 				result~=")";
