@@ -165,8 +165,8 @@ class Function: Primary, HasChildren {
 
 
 
-
-interface Ignorable {}
+interface NoFurtherInfo {}
+interface Ignorable : NoFurtherInfo {}
 
 /// whitespace 
 class Empty : Node, Ignorable {}
@@ -175,7 +175,10 @@ class Empty : Node, Ignorable {}
 class Comma : Node, Ignorable {}
 
 /// ':'
-class Colon : Node {}
+class Colon : Node, NoFurtherInfo {}
+
+/// can become part of a numer, or a Dot
+class FullStop : Node, NoFurtherInfo{}
 
 /// used for context exploration, not in final tree
 class EndOfList : Node, Ignorable {}
@@ -294,7 +297,7 @@ class Node
 				result~='\n'~spaces(indent)~")";
 			}
 		}
-		else if (this.isA!Ignorable)
+		else if (this.isA!NoFurtherInfo)
 			result=result[0..$-1];
 		else
 			result~= (cast(Variant) value).coerce!string~")";

@@ -235,6 +235,12 @@ Node eval(Node expr, ref Context context)
 	{
 		if (expr.isA!Dot)
 			// getMember(expr.children[0], expr.children[1])
+			/+
+			if(expr.children[0].isA!Dict)
+			{
+				
+			}
+			+/
 			throw new EvalException("Dicts not implemented");
 		else
 			return context[expr.value.coerce!string];

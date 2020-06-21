@@ -4,6 +4,8 @@ import std.uni;
 import std.range;
 import std.algorithm;
 
+import std.traits:isSomeString;
+
 Variant parseWordTo(T...)(string s)
 {
 	foreach(t; T)
@@ -263,6 +265,8 @@ Node parseExpr(ParseInfo p) { with (p)
 			auto newResult = new Dot();
 			newResult.children~=result;
 			
+			// is right-associative, should be left-associative..
+			
 			// looking ahead
 			Node buf = new Empty();
 			do {
@@ -413,4 +417,195 @@ Node parseExpr(ParseInfo p) { with (p)
 	
 	return result;
 }
+}
+
+
+
+
+
+
+
+
+
+
+/++
+ + returns a token stream
+ +/
+Node[] tokenize(Range)(Range s)
+{
+	assert(isSomeString!Range);
+	
+	debug { import std.stdio:writeln; }
+	Node[] result;
+	
+	while(!s.empty)
+	{
+	
+		Node current;
+		
+		// first character
+		// -----------------------------
+		
+		if (s.front.isWhite)
+		{
+			s.popFront;
+			continue;
+		}
+		else if (s.front == '#')
+		{
+			current = new HashComment;
+			s.popFront;
+		}
+		else if (s.front == ',')
+		{
+			current = new Comma;
+			s.popFront;
+		}
+		else if (s.front == '.')
+		{
+			current = new FullStop;
+			s.popFront;
+		}
+		else if (s.front == ':')
+		{
+			current = new Colon;
+			s.popFront;
+		}
+		else if (s.front == '[')
+		{
+			current = new List;
+			s.popFront;
+		}
+		else if (s.front == ']')
+		{
+			current = new EndOfList;
+			s.popFront;
+		}
+		else if (s.front == '(')
+		{
+			current = new Parens;
+			s.popFront;
+		}
+		else if (s.front == ')')
+		{
+			current = new EndOfParens;
+			s.popFront;
+		}
+		else if (s.front == '"')
+		{
+			current = new String;
+			s.popFront;
+		}
+		else if (s.front.isNumber)
+			current = new NumberP;
+		else if (s.front.isAlpha || s.front == '_' )
+			current = new Ident;
+		else if (s.front.isValidSymbol)
+			current = new Symbol;
+		else
+			throw new ParsingException("invalid character: "~s.front.to!string);
+		
+		// first pass
+		// -----------------------------
+		
+		if (current.isA!HashComment)
+		{
+			while(!s.empty && s.front != '\n')
+			{
+				s.popFront;
+			}
+			current = new HashComment;
+		}
+		
+		if (current.isA!String)
+		{
+			current.value = "";
+			while (!s.empty && s.front != '"')
+			{
+				current.value~=s.front.to!string; // remember it's a dchar
+				s.popFront;
+				// TODO handle escaping
+			}
+		}
+		
+		
+		// if a number follows the dot then it's a number
+		// a.5 is Ident(a) NumberR(0.5)
+		if (current.isA!FullStop && s.front.isNumber)
+		{
+			current = new NumberR;
+			current.value = ".";
+		}
+		
+		if (current.isA!Number)
+		{
+			if (!current.value.hasValue)
+				current.value = "";
+			while(!s.empty)
+			{
+				if (s.front.isNumber)
+					current.value~=s.front.to!string;
+					
+				else if (s.front == '.')
+				{
+					if (current.isA!NumberR)
+						throw new ParsingException("invalid number literal: "~current.value.get!string~s.front.to!string);
+					current = new NumberR(current);
+					
+					current.value~=s.front.to!string;
+				}
+				else if (s.front == '_') {}
+				else
+					break;
+				s.popFront;
+			}
+			
+			
+			if (current.isA!NumberR)
+				current.value = current.value.get!string.to!double;
+			else
+			{
+				current = new NumberZ(current);
+				current.value = current.value.get!string.to!long;
+			}
+			
+		}
+		
+		if (current.isA!Symbol)
+		{
+			current.value = "";
+			while(!s.empty)
+			{
+				if ((s.front.isSymbol || s.front.isPunctuation) && !reservedSymbols.canFind(s.front))
+					current.value~=s.front.to!string;
+				else
+					break;
+				s.popFront;
+			}
+			
+		}
+		else if (current.isA!Ident)
+		{
+			current.value = "";
+			current.value~=s.front.to!string; s.popFront;
+			
+			while(!s.empty)
+			{
+				if (s.front == '_' || s.front.isAlphaNum)
+					current.value~=s.front.to!string;
+				else
+					break;
+				s.popFront;
+			}
+			current.value=current.value.get!string.toLower; //case insensitivity
+			
+		}
+		
+		
+		result~=current;
+	}
+	
+	result~=(new EndOfFile);
+	
+	return result;
 }
