@@ -2,13 +2,20 @@ import risper;
 
 import std.stdio;
 import std.file;
+import util;
 
 
 int main(string[] args)
 {
+	auto usage="
+	Risper interpreter. Usage:
+	risper <filename> [--debug]
+	risper -c <program> [--debug]
+	".trimIndent;
+	
 	if (args.length < 2)
 	{
-		writeln("Please pass file name as argument");
+		writeln(usage);
 		return 1;
 	}
 	
@@ -25,16 +32,26 @@ int main(string[] args)
 	else
 		expr = args[1].read.to!string;
 	
+	auto debugMode=false;
+	if (args[$-1] == "--debug")
+		debugMode=true;
+	
 	auto tree = parse(expr);
 	
-	writeln("------ AST --------------------");
-	writeln(tree);
+	if (debugMode)
+	{
+		writeln("------ AST --------------------");
+		writeln(tree);
+	}
 	
 	Context c = new Context;
-	writeln("------ result -----------------");
+	if (debugMode)
+		writeln("------ result -----------------");
 	eval(tree, c).writeln;
-	writeln("------ context ----------------");
-	c.writeln;
-	
+	if (debugMode)
+	{
+		writeln("------ context ----------------");
+		c.writeln;
+	}
 	return 0;
 }
