@@ -301,6 +301,46 @@ class Node
 			
 		return result;
 	}
+	
+	string toDOTgraph()
+	{
+		string thisNode=this.toHash.to!string~" [label=\""~typeid(this).to!string["common.".length..$].capitalizeFirst;
+		string strChildren="";
+		
+		if (this.isA!Dict)
+		{
+			auto members = (cast(Dict) this).members;
+			foreach (k;members.byKey)
+			{
+				strChildren~=this.toHash.to!string~" -> "~k.toHash.to!string~" [arrowhead=none]\n";
+				strChildren~=k.toHash.to!string~" -> "~members[k].toHash.to!string~" [arrowhead=vee]\n";
+				strChildren~=k.toDOTgraph;
+				strChildren~=members[k].toDOTgraph;
+			}
+		}
+		else if (this.isA!HasChildren)
+		{
+			if(this.isA!Call)
+			{
+				strChildren~=this.toHash.to!string~" -> "~(cast(Call) this).func.toHash.to!string~" [arrowhead=box]\n";
+				strChildren~=(cast(Call) this).func.toDOTgraph;
+			}
+			
+			foreach(c;children)
+			{
+				strChildren~=this.toHash.to!string~" -> "~c.toHash.to!string~" [arrowhead=none]\n";
+				strChildren~=c.toDOTgraph;
+			}
+		}
+		else if (this.isA!Ignorable)
+			{}
+		else
+			thisNode~= "("~(cast(Variant) value).coerce!string~")";
+		
+		thisNode~="\"]";
+		
+		return thisNode~"\n"~strChildren;
+	}
 }
 
 

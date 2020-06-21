@@ -31,24 +31,31 @@ int main(string[] args)
 	bool exprSet = false;
 	string expr;
 	auto debugMode=false;
+	string astFilename="";
 	
 	args = args[1..$];
 	auto index=0;
 	for(auto i=0;i<args.length;i++)
 	{
 		auto a = args[i];
-		if (a == "--debug")
-			debugMode=true;
-		
-		else if (a == "--command" || a == "-c")
+		if (a == "--command" || a == "-c")
 		{
-			if (i==args.length)
+			if (i==args.length-1)
 				crash("Pass expression as argument to -c");
 				
 			if (exprSet)
 				crash("Pass either filename or -c, and only once");
 			expr = args[++i];
 			exprSet=true;
+		}
+		else if (a == "--debug")
+			debugMode=true;
+			
+		else if (a == "--ast")
+		{
+			if (i==args.length-1)
+				crash("Pass filename or '-' as argument to --ast");
+			astFilename=args[++i];
 		}
 		
 		else // positional
@@ -68,6 +75,14 @@ int main(string[] args)
 	{
 		writeln("------ AST --------------------");
 		writeln(tree);
+	}
+	
+	if (astFilename != "")
+	{
+		if (astFilename == "-")
+			write("digraph AST\n{\n"~tree.toDOTgraph~"\n}\n");
+		else
+			toFile("digraph "~astFilename~"\n{\n"~tree.toDOTgraph~"}\n", astFilename);
 	}
 	
 	Context c = new Context;
