@@ -1,6 +1,11 @@
 ## The Risper language
 
-Risper is a language intended for scripting and interacting with D environments.
+Risper is a language in which I experiment with features that seem interesting
+to me. Perhaps I wish they were more common in the languages I use.
+
+It is a Lisp, influenced by languages sich as D, Groovy, Python, and Javascript.
+
+
 
 Characteristics:
  - interpreted
@@ -14,7 +19,7 @@ Characteristics:
  
  - identifiers are any set of Unicode alphanumeric characters starting with an
    alphabetic character
- - symbols are single-character identifiers
+ - symbols are single-character non-alphanumeric identifiers
  - case-insensitive
  - automatic typing with optional type declaration
 
@@ -52,6 +57,9 @@ To accept multiple arguments, we overload Parens `()`: so the code `f(1 2)`
 passes `1` and `2`, but `f[1 2]` passes `[1 2]`. Originally, Lists were always
 expanded, but that results in confusing syntax when we want to pass a single
 list as argument (eg `f[[1 2]]`, that's just ugly).
+
+Dicts (AKA associative arrays, maps, objects) use the same syntax as lists but
+with a `:` colon. Can be addressed with the `.` Dot syntax.
 
 ### built-in functions
 
