@@ -97,6 +97,9 @@ Node parseExpr(string s)
 
 /++
  + the actual parser
+ +
+ + this should be split into lexical (outputs a token stream) and
+ + syntactical (outputs an AST) parts
  +/
 Node parseExpr(ParseInfo p) { with (p)
 {

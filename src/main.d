@@ -2,39 +2,65 @@ import risper;
 
 import std.stdio;
 import std.file;
+import std.algorithm;
+import core.stdc.stdlib;
+
 import util;
+
+void crash(string s, int returnValue=1)
+{
+	writeln(s);
+	exit(returnValue);
+}
 
 
 int main(string[] args)
 {
 	auto usage="
-	Risper interpreter. Usage:
-	risper <filename> [--debug]
-	risper -c <program> [--debug]
+	Risper interpreter.
+	Usage: risper <filename>, or risper -c <program> 
+	Options:
+	  --debug            print debug info
+	  --ast <filename>   print a DOT graph of the AST right after parsing
+	                     ( - for stdout)
 	".trimIndent;
 	
-	if (args.length < 2)
-	{
-		writeln(usage);
-		return 1;
-	}
+	if (args.length < 2 || args.canFind("-h") || args.canFind("--help"))
+		crash(usage);
 	
+	bool exprSet = false;
 	string expr;
-	if(args[1] == "-c")
-	{
-		if (args.length < 3)
-		{
-			writeln("Please pass expression as argument to -c");
-			return 1;
-		}
-		expr = args[2];
-	}
-	else
-		expr = args[1].read.to!string;
-	
 	auto debugMode=false;
-	if (args[$-1] == "--debug")
-		debugMode=true;
+	
+	args = args[1..$];
+	auto index=0;
+	for(auto i=0;i<args.length;i++)
+	{
+		auto a = args[i];
+		if (a == "--debug")
+			debugMode=true;
+		
+		else if (a == "--command" || a == "-c")
+		{
+			if (i==args.length)
+				crash("Pass expression as argument to -c");
+				
+			if (exprSet)
+				crash("Pass either filename or -c, and only once");
+			expr = args[++i];
+			exprSet=true;
+		}
+		
+		else // positional
+		{
+			if (exprSet)
+				crash("Pass either filename or -c, and only once");
+				
+			expr = a.read.to!string;
+			exprSet=true;
+		}
+		
+	}
 	
 	auto tree = parse(expr);
 	
@@ -47,7 +73,17 @@ int main(string[] args)
 	Context c = new Context;
 	if (debugMode)
 		writeln("------ result -----------------");
-	eval(tree, c).writeln;
+		
+	try
+	{
+		eval(tree, c).writeln;
+	}
+	catch(Exception e)
+	{
+		if(debugMode)
+			throw e;
+		crash(e.msg);
+	}
 	if (debugMode)
 	{
 		writeln("------ context ----------------");
