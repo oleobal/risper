@@ -13,7 +13,7 @@ bool isA(T)(const Object o)
 dchar[] reservedSymbols =
 [
 	'#',
-	'.',',',':',
+	'.',',',':',';',
 	'(',')',
 	'[',']',
 	'{','}',
@@ -176,12 +176,16 @@ class Comma : Node, Ignorable {}
 
 /// ':'
 class Colon : Node, NoFurtherInfo {}
+/// ';'
+class Semicolon : Node, NoFurtherInfo {}
 
 /// can become part of a numer, or a Dot
-class FullStop : Node, NoFurtherInfo{}
+class FullStop : Node, NoFurtherInfo, Preliminary {}
 
-/// used for context exploration, not in final tree
-class EndOfList : Node, Ignorable {}
+class StartOfList: Node, Preliminary {}
+class StartOfParens: StartOfList {}
+
+class EndOfList : Node, Ignorable, Preliminary {}
 class EndOfParens : EndOfList {}
 
 class EndOfFile : Node, Ignorable {}
@@ -347,13 +351,16 @@ class Node
 }
 
 
-class ParsingException:Exception
+class ParseException:Exception
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		super(msg, file, line);
 	}
 }
+
+class ParseSyntaxException: ParseException {}
+class ParseLexicException: ParseException {}
 
 class EvalException:Exception
 {

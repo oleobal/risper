@@ -166,7 +166,7 @@ Node parseExpr(ParseInfo p) { with (p)
 	else if (s[i].isValidSymbol)
 		result = new Symbol;
 	else
-		throw new ParsingException("invalid character: "~s[i].to!string);
+		throw new ParseException("invalid character: "~s[i].to!string);
 	
 	// first pass
 	// -----------------------------
@@ -210,7 +210,7 @@ Node parseExpr(ParseInfo p) { with (p)
 			else if (s[i] == '.')
 			{
 				if (result.isA!NumberR)
-					throw new ParsingException("invalid number literal: "~result.value.get!string~s[i].to!string);
+					throw new ParseException("invalid number literal: "~result.value.get!string~s[i].to!string);
 				result = new NumberR(result);
 				
 				result.value~=s[i].to!string;
@@ -291,7 +291,7 @@ Node parseExpr(ParseInfo p) { with (p)
 						break;
 					}
 					else
-						throw new ParsingException("dot operator followed by "~buf.to!string);
+						throw new ParseException("dot operator followed by "~buf.to!string);
 				}
 			}
 			while (buf.isA!Ignorable);
@@ -320,7 +320,7 @@ Node parseExpr(ParseInfo p) { with (p)
 				
 				result = new Dict(result);
 				if (result.children.length > 1)
-					throw new ParsingException("Invalid mixing of List and Dict syntax");
+					throw new ParseException("Invalid mixing of List and Dict syntax");
 				if (result.children.length>0)
 					(cast(Dict) result).members[result.children[0]] = null;
 				result.children=[];
@@ -471,9 +471,14 @@ Node[] tokenize(Range)(Range s)
 			current = new Colon;
 			s.popFront;
 		}
+		else if (s.front == ';')
+		{
+			current = new Semicolon;
+			s.popFront;
+		}
 		else if (s.front == '[')
 		{
-			current = new List;
+			current = new StartOfList;
 			s.popFront;
 		}
 		else if (s.front == ']')
@@ -483,7 +488,7 @@ Node[] tokenize(Range)(Range s)
 		}
 		else if (s.front == '(')
 		{
-			current = new Parens;
+			current = new StartOfParens;
 			s.popFront;
 		}
 		else if (s.front == ')')
@@ -503,10 +508,11 @@ Node[] tokenize(Range)(Range s)
 		else if (s.front.isValidSymbol)
 			current = new Symbol;
 		else
-			throw new ParsingException("invalid character: "~s.front.to!string);
+			throw new ParseLexicException("invalid character: "~s.front.to!string);
 		
-		// first pass
-		// -----------------------------
+		
+		
+		// keep munching if necessary
 		
 		if (current.isA!HashComment)
 		{
@@ -549,7 +555,7 @@ Node[] tokenize(Range)(Range s)
 				else if (s.front == '.')
 				{
 					if (current.isA!NumberR)
-						throw new ParsingException("invalid number literal: "~current.value.get!string~s.front.to!string);
+						throw new ParseLexicException("invalid number literal: "~current.value.get!string~s.front.to!string);
 					current = new NumberR(current);
 					
 					current.value~=s.front.to!string;
@@ -609,3 +615,49 @@ Node[] tokenize(Range)(Range s)
 	
 	return result;
 }
+
+
+
+
+T treeze(T:List)(InputRange!Node n, Node stopAt=null)
+{
+	T result= new T;
+	
+	while(!n.empty)
+	{
+		if (stopAt && typeid(n.front) == typeid(stopAt))
+			break;
+			
+			
+		if (n.front.isA!Ignorable)
+			n.popFront;
+		else if (n.front.isA!StartOfList)
+		{
+			n.popFront;
+			result.children~=treeze!List(n, stopAt=new Parens)
+		}
+		else if (n.front.isA!StartOfParens)
+		{
+			n.popFront;
+			result.children~=treeze!Parens(n, stopAt=new Parens)
+		}
+		else if (n.front.isA!Colon)
+		{
+			if (!result.isA!List)
+				throw new ParseSyntaxException("Colon outside of List")
+			
+			auto newResult = new Dict;
+			if (result.children.length==0) {}
+			if (result.children.length==1)
+				newResult.members[result.children[0]] == null;
+			else
+				throw new ParseSyntaxException("mixing of List and Dict syntax")
+			
+			
+			
+		}
+		
+	}
+	return result;
+}
+
