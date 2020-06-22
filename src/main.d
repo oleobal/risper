@@ -3,6 +3,7 @@ import risper;
 import std.stdio;
 import std.file;
 import std.algorithm;
+import std.range.interfaces;
 import core.stdc.stdlib;
 
 import util;
@@ -69,10 +70,11 @@ int main(string[] args)
 		
 	}
 	
-	// auto tokenList = tokenize(expr);
-	// writeln(tokenList);
+	auto tokenList = tokenize(expr);
+	writeln(tokenList);
+	auto tree = treeze!Parens(inputRangeObject(tokenList));
 	
-	auto tree = parse(expr);
+	//auto tree = parse(expr);
 	
 	if (debugMode)
 	{

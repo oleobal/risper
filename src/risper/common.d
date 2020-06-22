@@ -164,15 +164,16 @@ class Function: Primary, HasChildren {
 }
 
 
-
+/// Means nothing is in the .value field
 interface NoFurtherInfo {}
+
 interface Ignorable : NoFurtherInfo {}
 
 /// whitespace 
 class Empty : Node, Ignorable {}
 
 /// ',' (forceful separator)
-class Comma : Node, Ignorable {}
+class Comma : Node, NoFurtherInfo {}
 
 /// ':'
 class Colon : Node, NoFurtherInfo {}
@@ -182,11 +183,30 @@ class Semicolon : Node, NoFurtherInfo {}
 /// can become part of a numer, or a Dot
 class FullStop : Node, NoFurtherInfo, Preliminary {}
 
-class StartOfList: Node, Preliminary {}
+class StartOfList: Node, Preliminary, NoFurtherInfo {}
 class StartOfParens: StartOfList {}
 
 class EndOfList : Node, Ignorable, Preliminary {}
 class EndOfParens : EndOfList {}
+
+/++
+ + this should be some metaprogramming nonsense rather than instances
+ +/
+EndOfList correspondingEnd(StartOfList s)
+{
+	if (s.isA!StartOfParens)
+		return new EndOfParens;
+	else
+		return new EndOfList;
+}
+List correspondingList(StartOfList s)
+{
+	if (s.isA!StartOfParens)
+		return new Parens;
+	else
+		return new List;
+}
+
 
 class EndOfFile : Node, Ignorable {}
 
@@ -351,7 +371,7 @@ class Node
 }
 
 
-class ParseException:Exception
+mixin template ExceptionConstructor()
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
@@ -359,16 +379,11 @@ class ParseException:Exception
 	}
 }
 
-class ParseSyntaxException: ParseException {}
-class ParseLexicException: ParseException {}
+class ParseException:Exception {mixin ExceptionConstructor;}
+class ParseSyntaxException: ParseException {mixin ExceptionConstructor;}
+class ParseLexicException: ParseException {mixin ExceptionConstructor;}
 
-class EvalException:Exception
-{
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
-	{
-		super(msg, file, line);
-	}
-}
+class EvalException:Exception {mixin ExceptionConstructor;}
 
 pure T capitalizeFirst(T)(T s) if (isSomeString!T)
 {

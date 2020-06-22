@@ -619,7 +619,7 @@ Node[] tokenize(Range)(Range s)
 
 
 
-T treeze(T:List)(InputRange!Node n, Node stopAt=null)
+Node treeze(T:List)(InputRange!Node n, Node stopAt=null)
 {
 	T result= new T;
 	
@@ -631,27 +631,91 @@ T treeze(T:List)(InputRange!Node n, Node stopAt=null)
 			
 		if (n.front.isA!Ignorable)
 			n.popFront;
+		else if (n.front.isA!Comma) // almost but not quite ignorable
+			n.popFront;
+		else if (n.front.isA!Literal)
+		{
+			result.children~=n.front;
+			n.popFront;
+		}
 		else if (n.front.isA!StartOfList)
 		{
 			n.popFront;
-			result.children~=treeze!List(n, stopAt=new Parens)
+			result.children~=treeze!List(n, stopAt=new List);
 		}
 		else if (n.front.isA!StartOfParens)
 		{
 			n.popFront;
-			result.children~=treeze!Parens(n, stopAt=new Parens)
+			result.children~=treeze!Parens(n, stopAt=new Parens);
 		}
+		
+		
+		else if (n.front.isA!Ident)
+		{
+			Node buf = n.front;
+			n.popFront;
+			
+			// look ahead for Dot
+			while (!n.empty && ( n.front.isA!Ignorable || n.front.isA!FullStop || n.front.isA!Symbol) )
+			{
+				if (n.front.isA!Ignorable)
+				{
+					n.popFront;
+					continue;
+				}
+				
+				auto newBuf = new Dot;
+				newBuf.children~=buf;
+				if (n.front.isA!FullStop)
+				{
+					n.popFront;
+					if (!n.front.isA!Ident)
+						throw new ParseSyntaxException("Dot not followed by an Ident");
+					
+				}
+				newBuf.children~=n.front;
+				buf = newBuf;
+				n.popFront;
+			}
+			
+			
+			
+			// look ahead for Call
+			
+			while (!n.empty && n.front.isA!Ignorable)
+				n.popFront;
+			
+			if (!n.empty && (n.front.isA!Primary || n.front.isA!StartOfList))
+			{
+				if (n.front.isA!Primary)
+				{
+					buf = new Call(cast(Ident) buf, n.front);
+					n.popFront;
+				}
+				else if (n.front.isA!StartOfList)
+				{
+					n.popFront;
+					auto newBuf = treeze!(typeof(correspondingList(cast(StartOfList) n.front)))
+					                     (n, (cast(StartOfList) n.front).correspondingEnd);
+					buf = new Call(cast(Ident) buf, newBuf);
+				}
+			}
+			
+			result.children~=buf;
+		}
+		
+		
 		else if (n.front.isA!Colon)
 		{
 			if (!result.isA!List)
-				throw new ParseSyntaxException("Colon outside of List")
+				throw new ParseSyntaxException("Colon outside of List");
 			
 			auto newResult = new Dict;
 			if (result.children.length==0) {}
 			if (result.children.length==1)
-				newResult.members[result.children[0]] == null;
+				newResult.members[result.children[0]] == new Empty();
 			else
-				throw new ParseSyntaxException("mixing of List and Dict syntax")
+				throw new ParseSyntaxException("mixing of List and Dict syntax");
 			
 			
 			
