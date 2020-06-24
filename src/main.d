@@ -71,8 +71,7 @@ int main(string[] args)
 	}
 	
 	auto tokenList = tokenize(expr);
-	writeln(tokenList);
-	auto tree = treeze!Parens(inputRangeObject(tokenList));
+	auto tree = treeze(inputRangeObject(tokenList));
 	
 	//auto tree = parse(expr);
 	

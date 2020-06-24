@@ -186,7 +186,7 @@ class FullStop : Node, NoFurtherInfo, Preliminary {}
 class StartOfList: Node, Preliminary, NoFurtherInfo {}
 class StartOfParens: StartOfList {}
 
-class EndOfList : Node, Ignorable, Preliminary {}
+class EndOfList : Node, Preliminary, NoFurtherInfo {}
 class EndOfParens : EndOfList {}
 
 /++
@@ -196,15 +196,19 @@ EndOfList correspondingEnd(StartOfList s)
 {
 	if (s.isA!StartOfParens)
 		return new EndOfParens;
-	else
+	else if (s.isA!EndOfList)
 		return new EndOfList;
+	else
+		throw new Exception("Not a StartOfList "~s.to!string);
 }
 List correspondingList(StartOfList s)
 {
 	if (s.isA!StartOfParens)
 		return new Parens;
-	else
+	else if (s.isA!EndOfList)
 		return new List;
+	else
+		throw new Exception("Not a StartOfList "~s.to!string);
 }
 
 

@@ -532,6 +532,9 @@ Node[] tokenize(Range)(Range s)
 				s.popFront;
 				// TODO handle escaping
 			}
+			if (s.empty)
+				throw new ParseLexicException("Unterminated string");
+			s.popFront;
 		}
 		
 		
@@ -611,117 +614,179 @@ Node[] tokenize(Range)(Range s)
 		result~=current;
 	}
 	
-	result~=(new EndOfFile);
-	
 	return result;
 }
 
 
 
 
-Node treeze(T:List)(InputRange!Node n, Node stopAt=null)
+/++
+ + assumes it is getting a list of instructions
+ +/
+Node treeze(InputRange!Node n)
 {
-	T result= new T;
+	Node result = new Parens;
 	
 	while(!n.empty)
 	{
-		if (stopAt && typeid(n.front) == typeid(stopAt))
-			break;
-			
-			
+		import std.stdio;
+		writeln(" TZ ", n.front);
 		if (n.front.isA!Ignorable)
-			n.popFront;
-		else if (n.front.isA!Comma) // almost but not quite ignorable
-			n.popFront;
-		else if (n.front.isA!Literal)
-		{
-			result.children~=n.front;
-			n.popFront;
-		}
-		else if (n.front.isA!StartOfList)
 		{
 			n.popFront;
-			result.children~=treeze!List(n, stopAt=new List);
 		}
 		else if (n.front.isA!StartOfParens)
 		{
 			n.popFront;
-			result.children~=treeze!Parens(n, stopAt=new Parens);
+			result.children ~= parseList(n, new EndOfParens);
 		}
-		
-		
-		else if (n.front.isA!Ident)
+		else if (n.front.isA!StartOfList)
 		{
-			Node buf = n.front;
 			n.popFront;
-			
-			// look ahead for Dot
-			while (!n.empty && ( n.front.isA!Ignorable || n.front.isA!FullStop || n.front.isA!Symbol) )
-			{
-				if (n.front.isA!Ignorable)
-				{
-					n.popFront;
-					continue;
-				}
-				
-				auto newBuf = new Dot;
-				newBuf.children~=buf;
-				if (n.front.isA!FullStop)
-				{
-					n.popFront;
-					if (!n.front.isA!Ident)
-						throw new ParseSyntaxException("Dot not followed by an Ident");
-					
-				}
-				newBuf.children~=n.front;
-				buf = newBuf;
-				n.popFront;
-			}
-			
-			
-			
-			// look ahead for Call
-			
-			while (!n.empty && n.front.isA!Ignorable)
-				n.popFront;
-			
-			if (!n.empty && (n.front.isA!Primary || n.front.isA!StartOfList))
-			{
-				if (n.front.isA!Primary)
-				{
-					buf = new Call(cast(Ident) buf, n.front);
-					n.popFront;
-				}
-				else if (n.front.isA!StartOfList)
-				{
-					n.popFront;
-					auto newBuf = treeze!(typeof(correspondingList(cast(StartOfList) n.front)))
-					                     (n, (cast(StartOfList) n.front).correspondingEnd);
-					buf = new Call(cast(Ident) buf, newBuf);
-				}
-			}
-			
-			result.children~=buf;
+			result.children ~= parseList(n, new EndOfList);
 		}
-		
-		
-		else if (n.front.isA!Colon)
+		else
 		{
-			if (!result.isA!List)
-				throw new ParseSyntaxException("Colon outside of List");
-			
-			auto newResult = new Dict;
-			if (result.children.length==0) {}
-			if (result.children.length==1)
-				newResult.members[result.children[0]] == new Empty();
-			else
-				throw new ParseSyntaxException("mixing of List and Dict syntax");
-			
-			
-			
+			result.children ~= parseInstruction(n);
+			// TODO add semicolon support (retroactive Parens)
 		}
-		
 	}
+	
+	//if (result.children.length == 1)
+	//	return result.children[0];
+	
 	return result;
 }
 
+/++
+ + assumes it is only reading one instruction.
+ + stopAt is used for delimiting
+ +/
+Node parseInstruction(InputRange!Node n)
+{
+	import std.stdio; writeln(" PI ", n.front);
+	if (n.front.isA!Ignorable)
+	{
+		n.popFront;
+		return new Empty;
+	}
+	else if (n.front.isA!Comma) // almost but not quite ignorable
+	{
+		n.popFront;
+		return new Empty;
+	}
+	else if (n.front.isA!Literal)
+	{
+		auto buf = n.front;
+		n.popFront;
+		return buf;
+	}
+	else if (n.front.isA!StartOfParens)
+	{
+		n.popFront;
+		return parseList(n, new EndOfParens);
+	}
+	else if (n.front.isA!StartOfList)
+	{
+		n.popFront;
+		return parseList(n, new EndOfList);
+	}
+	
+	else if (n.front.isA!Ident)
+	{
+		Node buf = n.front;
+		n.popFront;
+		
+		// look ahead for Dot
+		while (!n.empty && ( n.front.isA!Ignorable || n.front.isA!FullStop || n.front.isA!Symbol) )
+		{
+			if (n.front.isA!Ignorable)
+			{
+				n.popFront;
+				continue;
+			}
+			
+			auto newBuf = new Dot;
+			newBuf.children~=buf;
+			if (n.front.isA!FullStop)
+			{
+				n.popFront;
+				if (!n.front.isA!Ident)
+					throw new ParseSyntaxException("Dot not followed by an Ident");
+				
+			}
+			newBuf.children~=n.front;
+			buf = newBuf;
+			n.popFront;
+		}
+		
+		
+		
+		// look ahead for Call
+		
+		while (!n.empty && n.front.isA!Ignorable)
+			n.popFront;
+		
+		if (!n.empty && (n.front.isA!Primary || n.front.isA!StartOfList))
+		{
+			if (n.front.isA!Primary)
+			{
+				buf = new Call(cast(Ident) buf, n.front);
+				n.popFront;
+			}
+			else if (n.front.isA!StartOfList)
+			{
+				auto endMarker = (cast(StartOfList) n.front).correspondingEnd;
+				n.popFront;
+				auto newBuf = parseList(n, endMarker);
+				
+				buf = new Call(cast(Ident) buf, newBuf);
+			}
+		}
+		
+		return buf;
+	}
+	
+	/+
+	else if (n.front.isA!Colon)
+	{
+		if (!result.isA!List)
+			throw new ParseSyntaxException("Colon outside of List");
+		
+		auto newResult = new Dict;
+		if (result.children.length==0) {}
+		if (result.children.length==1)
+			newResult.members[result.children[0]] == new Empty();
+		else
+			throw new ParseSyntaxException("mixing of List and Dict syntax");
+		
+		
+		
+	}
+	+/
+	throw new ParseSyntaxException("parseInstruction doesn't know what to do with "~n.front.to!string);
+}
+
+Node parseList(InputRange!Node n, Node stopAt)
+{
+	import std.stdio; writeln(" PL ", n.front, " ", stopAt);
+	Node result = new List;
+	if (stopAt.isA!Semicolon || stopAt.isA!EndOfParens)
+		result = new Parens;
+	
+	while(!n.empty)
+	{
+		if (stopAt && typeid(n.front) == typeid(stopAt))
+		{
+			n.popFront;
+			break;
+		}
+		
+		auto buf = parseInstruction(n);
+		if (!buf.isA!Ignorable)
+			result.children~=buf;
+	}
+	
+	import std.stdio; writeln(result);
+	return result;
+}
