@@ -289,10 +289,7 @@ Node eval(Node expr, ref Context context)
 	{
 		if (e.isA!Parens)
 		{
-			if (e.children.length == 1)
-				return eval(e.children[0], context);
-			else
-				return eval(e.children, context);
+			return eval(e.children, context);
 		}
 		else
 		{
@@ -304,15 +301,23 @@ Node eval(Node expr, ref Context context)
 	return new Empty();
 }
 
-/++ ditto +/
+/++
+ + Params:
+ +     expr = the list of expressions to evaluate
+ +     context = the defined identifiers
+ + Returns:
+ +     If one of the expressions is a Return, then the children of that
+ +     Else what the last expression evals to
+ +/
 Node eval(Node[] expr, ref Context context)
 {
+	Node result;
 	foreach(c;expr)
 	{
-		Node result = eval(c, context);
+		result = eval(c, context);
 		
 		if (result.isA!Return)
 			return result.children[0];
 	}
-	return new Empty();
+	return result;
 }

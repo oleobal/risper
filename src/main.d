@@ -35,13 +35,12 @@ int main(string[] args)
 	string astFilename="";
 	
 	args = args[1..$];
-	auto index=0;
 	for(auto i=0;i<args.length;i++)
 	{
-		auto a = args[i];
+		const auto a = args[i];
 		if (a == "--command" || a == "-c")
 		{
-			if (i==args.length-1)
+			if (i+1==args.length)
 				crash("Pass expression as argument to -c");
 				
 			if (exprSet)
@@ -54,7 +53,7 @@ int main(string[] args)
 			
 		else if (a == "--ast")
 		{
-			if (i==args.length-1)
+			if (i+1==args.length)
 				crash("Pass filename or '-' as argument to --ast");
 			astFilename=args[++i];
 		}
@@ -70,16 +69,7 @@ int main(string[] args)
 		
 	}
 	
-	auto tokenList = tokenize(expr);
-	auto tree = treeze(inputRangeObject(tokenList));
-	
-	//auto tree = parse(expr);
-	
-	if (debugMode)
-	{
-		writeln("------ AST --------------------");
-		writeln(tree);
-	}
+	auto tree = parse(expr);
 	
 	if (astFilename != "")
 	{
