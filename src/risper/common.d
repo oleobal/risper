@@ -196,19 +196,19 @@ EndOfList correspondingEnd(StartOfList s)
 {
 	if (s.isA!StartOfParens)
 		return new EndOfParens;
-	else if (s.isA!EndOfList)
+	else if (s.isA!StartOfList)
 		return new EndOfList;
 	else
-		throw new Exception("Not a StartOfList "~s.to!string);
+		throw new Exception("Not a StartOfList: "~s.to!string);
 }
 List correspondingList(StartOfList s)
 {
 	if (s.isA!StartOfParens)
 		return new Parens;
-	else if (s.isA!EndOfList)
+	else if (s.isA!StartOfList)
 		return new List;
 	else
-		throw new Exception("Not a StartOfList "~s.to!string);
+		throw new Exception("Not a StartOfList: "~s.to!string);
 }
 
 
