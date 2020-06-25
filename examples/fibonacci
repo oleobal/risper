@@ -17,4 +17,6 @@ store(fibonacci,
 	)
 )
 
-writeln( "Fibonacci " 10 " = " fibonacci(10))
+writeln("Fibonacci " 10 " = " fibonacci(10))
+
+fibonacci 10

@@ -6,15 +6,11 @@ TODO: write out a full specification when I pin down a nice design.
 Lists are delimited with `[]`. List elements are separated with whitespace, or
 with `,` (forced separation).
 
-Evaluating a list (ie, executing a block of code) evaluates all its elements but
-returns nothing (`Empty`). There are two ways to retrieve values: the first is
-to use the `return` function, and the other is to use the alternative type of
-list `()`, used for priority.
+Evaluating a list (ie, executing a block of code) evaluates all its elements and
+returns what the last one evaluates to. Values can also be retrieved with the
+`return` pseudo-function.
 
-Parens `()` have two special rules: 
- - if a Parens contains a single element, then it is replaced at runtime with
-   the evaluation of this element
- - Parens, unlike regular lists, are evaluated within the parent context.
+Parens `()`, unlike regular lists, are evaluated within the parent context.
 
 For instance, `if(true (store(a, 5)) )` results in `a=5` in the outer context,
 but `if( true [store(a, 5)] )` doesn't touch it.
