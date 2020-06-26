@@ -21,9 +21,11 @@ int main(string[] args)
 	Risper interpreter.
 	Usage: risper <filename>, or risper -c <program> 
 	Options:
-	  --debug            print debug info
-	  --ast <filename>   print a DOT graph of the AST right after parsing
-	                     ( - for stdout)
+	  --debug             print debug info
+	  --ast <filename>    output a DOT graph of the AST right after parsing
+	                      ( - for stdout)
+	  --tokens <filename> print a list of tokens (before AST construction)
+	                      ( - for stdout)
 	".trimIndent;
 	
 	if (args.length < 2 || args.canFind("-h") || args.canFind("--help"))
@@ -33,6 +35,7 @@ int main(string[] args)
 	string expr;
 	auto debugMode=false;
 	string astFilename="";
+	string tokenStreamFilename="";
 	
 	args = args[1..$];
 	for(auto i=0;i<args.length;i++)
@@ -57,6 +60,12 @@ int main(string[] args)
 				crash("Pass filename or '-' as argument to --ast");
 			astFilename=args[++i];
 		}
+		else if (a == "--tokens")
+		{
+			if (i+1==args.length)
+				crash("Pass filename or '-' as argument to --tokens");
+			tokenStreamFilename=args[++i];
+		}
 		
 		else // positional
 		{
@@ -67,6 +76,15 @@ int main(string[] args)
 			exprSet=true;
 		}
 		
+	}
+	
+	if (tokenStreamFilename != "")
+	{
+		auto tokenStream = tokenize(expr);
+		if (tokenStreamFilename == "-")
+			writeln(tokenStream);
+		else
+			toFile(tokenStream.to!string, tokenStreamFilename);
 	}
 	
 	auto tree = parse(expr);
