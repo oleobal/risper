@@ -92,7 +92,7 @@ int main(string[] args)
 	if (astFilename != "")
 	{
 		if (astFilename == "-")
-			write("digraph AST\n{\n"~tree.toDOTgraph~"\n}\n");
+			write("digraph AST\n{\n"~tree.toDOTgraph~"}\n");
 		else
 			toFile("digraph "~astFilename~"\n{\n"~tree.toDOTgraph~"}\n", astFilename);
 	}
