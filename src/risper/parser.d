@@ -54,8 +54,10 @@ Node[] tokenize(Range)(Range s)
 	
 	while(!s.empty)
 	{
-	
+		Node[] before;
 		Node current;
+		Node[] after;
+		
 		
 		// first character
 		// -----------------------------
@@ -171,11 +173,23 @@ Node[] tokenize(Range)(Range s)
 					
 				else if (s.front == '.')
 				{
-					if (current.isA!NumberR)
-						throw new ParseLexicException("invalid number literal: "~current.value.get!string~s.front.to!string);
-					current = new NumberR(current);
+					bool mightBeAreal=true;
+					s.popFront;
 					
-					current.value~=s.front.to!string;
+					if (s.front.isNumber)
+					{
+					
+						if (current.isA!NumberR)
+							throw new ParseLexicException("invalid number literal: "~current.value.get!string~s.front.to!string);
+						current = new NumberR(current);
+						current.value~=".";
+					}
+					else
+					{
+						after ~= new FullStop;
+						break;
+					}
+					
 				}
 				else if (s.front == '_') {}
 				else
@@ -225,7 +239,7 @@ Node[] tokenize(Range)(Range s)
 		}
 		
 		
-		result~=current;
+		result~= before.reverse ~ current ~ after;
 	}
 	
 	return result;
@@ -276,6 +290,31 @@ Node treeze(InputRange!Node n)
  +/
 Node parseInstruction(InputRange!Node n)
 {
+	void lookAheadForDot(ref Node current, InputRange!Node n)
+	{
+		while (!n.empty && ( n.front.isA!Ignorable || n.front.isA!FullStop || n.front.isA!Symbol) )
+		{
+			if (n.front.isA!Ignorable)
+			{
+				n.popFront;
+				continue;
+			}
+			
+			auto newBuf = new Dot;
+			newBuf.children~=current;
+			if (n.front.isA!FullStop)
+			{
+				n.popFront;
+				if (!n.front.isA!Ident)
+					throw new ParseSyntaxException("Dot not followed by an Ident");
+				
+			}
+			newBuf.children~=n.front;
+			current = newBuf;
+			n.popFront;
+		}
+	}
+	
 	if (n.front.isA!Ignorable)
 	{
 		n.popFront;
@@ -290,6 +329,7 @@ Node parseInstruction(InputRange!Node n)
 	{
 		auto buf = n.front;
 		n.popFront;
+		lookAheadForDot(buf, n);
 		return buf;
 	}
 	else if (n.front.isA!StartOfParens)
@@ -308,28 +348,7 @@ Node parseInstruction(InputRange!Node n)
 		Node buf = n.front;
 		n.popFront;
 		
-		// look ahead for Dot
-		while (!n.empty && ( n.front.isA!Ignorable || n.front.isA!FullStop || n.front.isA!Symbol) )
-		{
-			if (n.front.isA!Ignorable)
-			{
-				n.popFront;
-				continue;
-			}
-			
-			auto newBuf = new Dot;
-			newBuf.children~=buf;
-			if (n.front.isA!FullStop)
-			{
-				n.popFront;
-				if (!n.front.isA!Ident)
-					throw new ParseSyntaxException("Dot not followed by an Ident");
-				
-			}
-			newBuf.children~=n.front;
-			buf = newBuf;
-			n.popFront;
-		}
+		lookAheadForDot(buf, n);
 		
 		
 		
@@ -375,6 +394,7 @@ Node parseInstruction(InputRange!Node n)
 		
 	}
 	+/
+	
 	throw new ParseSyntaxException("parseInstruction doesn't know what to do with "~n.front.to!string);
 }
 
