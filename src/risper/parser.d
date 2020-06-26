@@ -173,7 +173,6 @@ Node[] tokenize(Range)(Range s)
 					
 				else if (s.front == '.')
 				{
-					bool mightBeAreal=true;
 					s.popFront;
 					
 					if (s.front.isNumber)
@@ -313,6 +312,28 @@ Node parseInstruction(InputRange!Node n)
 			current = newBuf;
 			n.popFront;
 		}
+		
+		// look ahead for Call
+		
+		while (!n.empty && n.front.isA!Ignorable)
+			n.popFront;
+		
+		if (!n.empty && (n.front.isA!Primary || n.front.isA!StartOfList))
+		{
+			if (n.front.isA!Primary)
+			{
+				current = new Call(cast(Ident) current, n.front);
+				n.popFront;
+			}
+			else if (n.front.isA!StartOfList)
+			{
+				auto endMarker = (cast(StartOfList) n.front).correspondingEnd;
+				n.popFront;
+				auto newBuf = parseList(n, endMarker);
+				
+				current = new Call(cast(Ident) current, newBuf);
+			}
+		}
 	}
 	
 	if (n.front.isA!Ignorable)
@@ -349,30 +370,6 @@ Node parseInstruction(InputRange!Node n)
 		n.popFront;
 		
 		lookAheadForDot(buf, n);
-		
-		
-		
-		// look ahead for Call
-		
-		while (!n.empty && n.front.isA!Ignorable)
-			n.popFront;
-		
-		if (!n.empty && (n.front.isA!Primary || n.front.isA!StartOfList))
-		{
-			if (n.front.isA!Primary)
-			{
-				buf = new Call(cast(Ident) buf, n.front);
-				n.popFront;
-			}
-			else if (n.front.isA!StartOfList)
-			{
-				auto endMarker = (cast(StartOfList) n.front).correspondingEnd;
-				n.popFront;
-				auto newBuf = parseList(n, endMarker);
-				
-				buf = new Call(cast(Ident) buf, newBuf);
-			}
-		}
 		
 		return buf;
 	}
