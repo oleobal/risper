@@ -18,3 +18,32 @@ you'd have b`do thing; do other thing` which I find more readable. But I don't
 think there is an actual difference between `,` and `;`.
 The obious conclusion is to remove one or the other, or to make them synonymous.
 
+
+----
+
+In D thanks to UFCS `a.d` can be a member or a method call.
+
+However in Risper the semantics change between the two. This is because
+functions require arguments. `a.d` on its own is a function pointer (an Ident
+really) and will only become a Call if it is followed by an argument.
+
+It means that the UFCS equivalent of `d(a)` is `a.d()`, which is.. meh. It also
+means that function calls "grab" what follows them which is definitely annoying.
+`,` can be used but that looks downright weird.
+
+I therefore propose to introduce a "pointer" sigil, `&`, which prefixes a Call.
+AST-wise it's very simple, just Pointer->Call. We also need suffix `*` for
+dereferencing I suppose.
+
+Although I'd prefer if both used function syntax. Easier to implement, really.
+
+----
+
+There needs to be some kind of separation between _methods_ and "functions that
+just happen to be in a Dict", if I want to merge Dicts and Objects the way JS
+does. In JS you have the `this` pointer which is overridden in member functions,
+but the way the `this` pointer works in JS is _not_ something to be copied.
+
+Maybe there could be two definitions, `function()` and `method()`, which would
+change context ?
+
