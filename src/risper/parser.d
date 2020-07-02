@@ -287,7 +287,7 @@ Node treeze(InputRange!Node n)
  + assumes it is only reading one instruction.
  + stopAt is used for delimiting
  +/
-Node parseInstruction(InputRange!Node n)
+Node parseInstruction(InputRange!Node n, Node stopAt=null)
 {
 	void lookAheadForDot(ref Node current, InputRange!Node n)
 	{
@@ -336,6 +336,9 @@ Node parseInstruction(InputRange!Node n)
 		}
 	}
 	
+	if (n.empty)
+		return new Empty;
+	
 	if (n.front.isA!Ignorable)
 	{
 		n.popFront;
@@ -374,23 +377,6 @@ Node parseInstruction(InputRange!Node n)
 		return buf;
 	}
 	
-	/+
-	else if (n.front.isA!Colon)
-	{
-		if (!result.isA!List)
-			throw new ParseSyntaxException("Colon outside of List");
-		
-		auto newResult = new Dict;
-		if (result.children.length==0) {}
-		if (result.children.length==1)
-			newResult.members[result.children[0]] == new Empty();
-		else
-			throw new ParseSyntaxException("mixing of List and Dict syntax");
-		
-		
-		
-	}
-	+/
 	
 	throw new ParseSyntaxException("parseInstruction doesn't know what to do with "~n.front.to!string);
 }
@@ -409,9 +395,97 @@ Node parseList(InputRange!Node n, Node stopAt)
 			break;
 		}
 		
+		
+		
+		if (n.front.isA!Colon)
+		{
+			n.popFront;
+			if (!result.isA!List)
+				throw new ParseSyntaxException("Colon outside of List");
+			
+			Node[Node] members;
+			if (result.children.length==0) {}
+			if (result.children.length==1)
+			{
+				if (result.children[0].isA!Ident)
+					members[new String(result.children[0])] = new Empty();
+				else
+					members[result.children[0]] = new Empty();
+			}
+			else
+				throw new ParseSyntaxException("mixing of List and Dict syntax");
+			result = parseDict(n, stopAt, members);
+		}
+		
 		auto buf = parseInstruction(n);
 		if (!buf.isA!Ignorable)
 			result.children~=buf;
+			
+		
+	}
+	
+	return result;
+}
+
+Node parseDict(InputRange!Node n, Node stopAt, Node[Node] startingPoint)
+{
+	Dict result = new Dict;
+	result.members = startingPoint;
+	
+	bool beforeColon=true;
+	Node lastKey;
+	if(startingPoint.length==1)
+	{
+		beforeColon=false;
+		lastKey=startingPoint.keys[0];
+	}
+	else if (startingPoint.length != 0)
+		throw new ParseSyntaxException("parseDict called with more than one element in the starting point");
+	
+	
+	
+	while(!n.empty)
+	{
+		if (stopAt && typeid(n.front) == typeid(stopAt))
+		{
+			n.popFront;
+			break;
+		}
+		
+		if (n.front.isA!Colon)
+		{
+			n.popFront;
+			if(beforeColon)
+				beforeColon=false;
+			else
+				throw new ParseSyntaxException("two Colons in a row in dict");
+			continue;
+		}
+		
+		if (n.front.isA!Comma)
+		{
+			n.popFront;
+			if(!beforeColon)
+				beforeColon=true;
+			// else whatever, who cares
+			continue;
+		}
+		
+		
+		
+		Node buf = parseInstruction(n);
+		if (beforeColon)
+		{
+			if (buf.isA!Ident)
+				buf = new String(buf);
+			result.members[buf]=new Empty;
+			lastKey=buf;
+		}
+		else
+		{
+			result.members[lastKey]=buf;
+			lastKey = null;
+		}
 	}
 	
 	return result;

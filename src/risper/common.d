@@ -4,9 +4,16 @@ import std.uni;
 
 import std.traits:isSomeString;
 
+/// is T or a subclass of T
 bool isA(T)(const Object o)
 {
 	return (cast(T) o) ?true:false;
+}
+
+/// is T, but not a subclass
+bool isExactlyA(T)(const Object o)
+{
+	return (typeid(o) == typeid(T));
 }
 
 
