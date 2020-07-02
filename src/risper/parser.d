@@ -252,35 +252,8 @@ Node[] tokenize(Range)(Range s)
  +/
 Node treeze(InputRange!Node n)
 {
-	Node result = new Parens;
+	return new Parens(parseList(n, null));
 	
-	while(!n.empty)
-	{
-		if (n.front.isA!Ignorable)
-		{
-			n.popFront;
-		}
-		else if (n.front.isA!StartOfParens)
-		{
-			n.popFront;
-			result.children ~= parseList(n, new EndOfParens);
-		}
-		else if (n.front.isA!StartOfList)
-		{
-			n.popFront;
-			result.children ~= parseList(n, new EndOfList);
-		}
-		else
-		{
-			result.children ~= parseInstruction(n);
-			// TODO add semicolon support (retroactive Parens)
-		}
-	}
-	
-	//if (result.children.length == 1)
-	//	return result.children[0];
-	
-	return result;
 }
 
 /++
@@ -404,7 +377,6 @@ Node parseList(InputRange!Node n, Node stopAt)
 				throw new ParseSyntaxException("Colon outside of List");
 			
 			Node[Node] members;
-			if (result.children.length==0) {}
 			if (result.children.length==1)
 			{
 				if (result.children[0].isA!Ident)
@@ -412,9 +384,9 @@ Node parseList(InputRange!Node n, Node stopAt)
 				else
 					members[result.children[0]] = new Empty();
 			}
-			else
+			else if (result.children.length>0)
 				throw new ParseSyntaxException("mixing of List and Dict syntax");
-			result = parseDict(n, stopAt, members);
+			return parseDict(n, stopAt, members);
 		}
 		
 		auto buf = parseInstruction(n);
