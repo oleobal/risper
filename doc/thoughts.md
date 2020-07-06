@@ -47,3 +47,23 @@ but the way the `this` pointer works in JS is _not_ something to be copied.
 Maybe there could be two definitions, `function()` and `method()`, which would
 change context ?
 
+----
+
+Fundamental problem in evaluating lists.
+
+Evaluating a primary should give you that primary. Lists, as data, are
+primaries.
+
+But "executing code" gives you a result. In Parens that's the last statement. In
+regular `[]` Lists that's Empty.
+
+But there's no distinction between executing and evaluating, and there's no
+distinction between lists and blocks of code. So... as of now, I can't
+manipulate lists, because they get replaced with the result of their computation
+as they are evaluated on assignment.
+
+I don't have a specific "execute this" keyword or sigil, and in fact I wanted
+not to have one. So how can I manipulate lists ?
+
+Would that mean setting up a difference between "evaluating" and "executing" ?
+(I should learn some better vocabulary..)
